@@ -1,3 +1,4 @@
 # 忽略所有名为 yolov5s.pt 的文件（无论在哪个子目录下）
 **/yolov5s.pt
 /history
+act_all-master-9c5ea7db51b24f8c6bd3550d99b36c8051b58083/
