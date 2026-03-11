@@ -1,5 +1,6 @@
+<!-- 用于 ~/manipulator_grasp-master/test1.py测试jaka是否可以正常移动-->
 <mujoco model="jaka_s5 scene">
-  <include file="jaka_s5_auto.xml"/>
+  <include file="jaka_s5_modi.xml"/>
 
   <statistic center="0.3 0 0.4" extent="0.8"/>
 
@@ -35,5 +36,18 @@
     <!-- <body name="target" pos="-0.13 0.5 0.1">
       <geom size="0.02" rgba="0 1 0 0.5" contype="0" conaffinity="0"/>
     </body> -->
+
+    <!-- 末端法兰的坐标系 -->
+    <body name="debug_flange_target_base" pos="0.68626472 0.71727465 1.77740824" xyaxes="1 0  0  0  0  -1">
+        	<geom type="sphere" size="0.01" rgba="1 1 0 0.8" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0.1 0 0" rgba="1 0 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0.1 0" rgba="0 1 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0 0.1" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    </body>
+
+
+
   </worldbody>
+
+  
 </mujoco>

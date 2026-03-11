@@ -52,7 +52,8 @@ def main():
  
     # ref_pos和initial_position 必须和URDF的link数量一致
     print(len(my_chain.links))
-    start_joints = np.array([-1.57, -1.34, 2.65, -1.3, 1.55, 0])  # 对应机械臂末端位姿，前3个是xyz坐标，后3个是末端姿态[-0.14, 0.3, 0.1, 3.14, 0, 1.57]
+    start_joints = np.array([-1.57, -1.34, 2.65, -1.3, 1.55, 0])  # 对应机械臂末端位姿[-0.14, 0.3, 0.1, 3.14, 0, 1.57]，前3个是xyz坐标，后3个是末端姿态
+    
     data.qpos[:6] = start_joints # 确保渲染一开始机械臂便处于起始位置，而非MJCF中的默认位置
  
     # 设置目标点

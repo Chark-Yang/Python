@@ -42,19 +42,27 @@ class UR5GraspEnv:
         self.mj_model = mujoco.MjModel.from_xml_path(filename)
         self.mj_data = mujoco.MjData(self.mj_model)
         mujoco.mj_forward(self.mj_model, self.mj_data)
+
         self.robot = UR5e()
         self.robot.set_base(mj.get_body_pose(self.mj_model, self.mj_data, "ur5e_base").t)
+        print("robot base:", self.robot.base)
+
+        # 设置起始位置
         self.robot_q = np.array([0.0, 0.0, np.pi / 2 * 0, 0.0, -np.pi / 2 * 0, 0.0])
         self.robot.set_joint(self.robot_q)
         self.joint_names = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint", "wrist_1_joint",
                             "wrist_2_joint", "wrist_3_joint"]
         [mj.set_joint_q(self.mj_model, self.mj_data, jn, self.robot_q[i]) for i, jn in enumerate(self.joint_names)]
         mujoco.mj_forward(self.mj_model, self.mj_data)
+
         mj.attach(self.mj_model, self.mj_data, "attach", "2f85", self.robot.fkine(self.robot_q))
+        print("UR5e末端法兰位姿:", self.robot.fkine(self.robot_q))
+
         robot_tool = sm.SE3.Trans(0.0, 0.0, 0.13) * sm.SE3.RPY(-np.pi / 2, -np.pi / 2, 0.0)
         self.robot.set_tool(robot_tool)
         self.robot_T = self.robot.fkine(self.robot_q)
         self.T0 = self.robot_T.copy()
+        print(self.T0)
 
         self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
         self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)

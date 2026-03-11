@@ -12,6 +12,7 @@ import mujoco.viewer
 from manipulator_grasp.arm.robot import Robot, UR5e, jaka
 from manipulator_grasp.arm.motion_planning import *
 from manipulator_grasp.utils import mj
+import ikpy.chain
 
 
 class jakaGraspEnv:
@@ -38,18 +39,21 @@ class jakaGraspEnv:
         self.num_points = 4096
 
     def reset(self):
+
         URDF_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'jaka_description', 'jaka_s5.urdf')
         MUJOCO_XML_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'assets', 'scenes', 'scene_jaka.xml')
-        # print(f"Loading model from {MUJOCO_XML_PATH}")
+
         self.mj_model = mujoco.MjModel.from_xml_path(MUJOCO_XML_PATH)
         self.mj_data = mujoco.MjData(self.mj_model)
         mujoco.mj_forward(self.mj_model, self.mj_data)
 
-        self.robot = jaka.JakaRobot(URDF_PATH, "Link_06")
+        self.robot = jaka.JakaRobot(URDF_PATH, "Link_05")
         self.robot.set_base(mj.get_body_pose(self.mj_model, self.mj_data, "jaka_base").t)
-        print("robot base:", self.robot.base)
+        # print("robot base:", self.robot.base)
         
-        self.robot_q = np.array([0, 1.57, 0, 1.57, 0, 0.0])
+        # 设置起始位置
+        # self.robot_q = np.array([0, 0, 0, 0, 0, 0])
+        self.robot_q = np.array([1.57, 1.57, 0, 1.57, 1.57, 0])
         self.robot.set_joint(self.robot_q)
         
         self.joint_names = ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"]
@@ -57,20 +61,33 @@ class jakaGraspEnv:
         
         [mj.set_joint_q(self.mj_model, self.mj_data, jn, self.robot_q[i]) for i, jn in enumerate(self.joint_names)]
         mujoco.mj_forward(self.mj_model, self.mj_data)
+
+
+        # 1. 计算夹爪末端当前的绝对位姿 (此时还没有设置 Tool)
+        T_flange = self.robot.fkine(self.robot_q)
+        print("起始状态当前位姿：\n", T_flange)
         
-        # 挂载夹爪，正向运动学求解，计算末端位姿
-        mj.attach(self.mj_model, self.mj_data, "attach", "2f85", self.robot.fkine(self.robot_q))
-        robot_tool = sm.SE3.Trans(0.0, 0.0, 0.13) * sm.SE3.RPY(-np.pi / 2, -np.pi / 2, 0.0)
+        
+        # 2. 计算夹爪底座应该去的真实位置
+        T_gripper_base = sm.SE3(T_flange) 
+        # print(sm.SE3(T_gripper_base))
+
+        # 不用挂载夹爪了，正向运动学求解，计算末端位姿
+        mj.attach(self.mj_model, self.mj_data, "attach", "2f85", sm.SE3(T_gripper_base))
+
+        robot_tool = sm.SE3.Trans(0.0, 0.13, 0.0)
         self.robot.set_tool(robot_tool)
         self.robot_T = self.robot.fkine(self.robot_q)
         self.T0 = self.robot_T.copy()
+        print(f"self.T0：{self.T0}")
+
 
         self.mj_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
         self.mj_depth_renderer = mujoco.renderer.Renderer(self.mj_model, height=self.height, width=self.width)
         self.mj_renderer.update_scene(self.mj_data, 0)
         self.mj_depth_renderer.update_scene(self.mj_data, 0)
         self.mj_depth_renderer.enable_depth_rendering()
-        self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data)
+        # self.mj_viewer = mujoco.viewer.launch_passive(self.mj_model, self.mj_data)
 
         self.camera_matrix = np.array([
             [self.height / (2.0 * np.tan(self.fovy / 2.0)), 0.0, self.width / 2.0],
@@ -97,7 +114,7 @@ class jakaGraspEnv:
             self.mj_data.ctrl[:] = action
         mujoco.mj_step(self.mj_model, self.mj_data)
 
-        self.mj_viewer.sync()
+        # self.mj_viewer.sync()
 
     def render(self):
         self.mj_renderer.update_scene(self.mj_data, 0)
@@ -106,6 +123,7 @@ class jakaGraspEnv:
             'img': self.mj_renderer.render(),
             'depth': self.mj_depth_renderer.render()
         }
+
 
 
 if __name__ == '__main__':

@@ -22,7 +22,6 @@ from data_utils import CameraInfo, create_point_cloud_from_depth_image
 
 from manipulator_grasp.arm.motion_planning import *
 from manipulator_grasp.env.ur5_grasp_env import UR5GraspEnv
-from manipulator_grasp.env.jaka_grasp_env import jakaGraspEnv
 
 
 def get_net():
@@ -136,7 +135,7 @@ if __name__ == '__main__':
     net = get_net()
 
     # 初始化仿真环境
-    env = jakaGraspEnv()
+    env = UR5GraspEnv()
     env.reset()
     for i in range(1000):
         env.step()
@@ -151,9 +150,10 @@ if __name__ == '__main__':
     o_wc = np.array([-1.0, 0.0, -0.5])
     t_wc = np.array([1.0, 0.6, 2.0])
     T_wc = sm.SE3.Trans(t_wc) * sm.SE3(sm.SO3.TwoVectors(x=n_wc, y=o_wc))
+    print("T_wc:\n", T_wc)
     T_co = sm.SE3.Trans(gg.translations[0]) * sm.SE3(
         sm.SO3.TwoVectors(x=gg.rotation_matrices[0][:, 0], y=gg.rotation_matrices[0][:, 1]))
-
+  
     T_wo = T_wc * T_co
     print("T_wo:\n", T_wo)
 

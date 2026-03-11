@@ -71,16 +71,40 @@
 		</body>
 
         <!--table -->
-		<body name = "table1" euler="0 0 0" pos= "0.8 0 0.74" >
+		<!-- <body name = "table1" euler="0 0 0" pos= "0.8 0 0.74" >
 		  <geom name = "table1" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
-		</body>
-		<body name = "table2" euler="0 0 0" pos= "1.6 0 0.74" >base
+		</body> -->
+		<!-- <body name = "table2" euler="0 0 0" pos= "1.6 0 0.74" >base
 		  <geom name = "table2" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
-		</body>
+		</body> -->
 
 		<body name="simple_table" pos="0.8 0.6 0.69" quat="1 0 0 0">
 			<geom name="simple_table" type="box" size="0.8 0.6 0.05" rgba="0.5 0.5 0.5 0.1"/>
 		</body>
+
+		<!-- UR5e初始位置末端位姿 -->
+		<body name="debug_flange_target" pos="0.8 0.834 1.825" xyaxes="1 0 0  0  0  -1">
+        	<geom type="sphere" size="0.01" rgba="1 1 0 0.8" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0.1 0 0" rgba="1 0 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0.1 0" rgba="0 1 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0 0.1" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    	</body>
+
+		<!-- 基座坐标系 -->
+		<body name="debug_flange_target_base" pos="0.8 0.66 0.745" xyaxes="1 0 0  0  1  0">
+        	<geom type="sphere" size="0.01" rgba="1 1 0 0.8" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0.1 0 0" rgba="1 0 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0.1 0" rgba="0 1 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0 0.1" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    	</body>
+
+		<body name="target_sphere" pos="0.8 0.964 1.825" xyaxes="0 1 0  1  0  0" >
+			<geom type="sphere" size="0.01" rgba="153 51 255 0.8" contype="0" conaffinity="0"/>
+			<geom type="cylinder" size="0.002" fromto="0 0 0 0.1 0 0" rgba="1 0 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0.1 0" rgba="0 1 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0 0.1" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+		</body>
+
     </worldbody>
 
     <contact>

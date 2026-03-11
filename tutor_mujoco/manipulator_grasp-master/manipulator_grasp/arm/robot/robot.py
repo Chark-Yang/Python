@@ -65,6 +65,8 @@ class Robot(abc.ABC):
 
         self._base = SE3()
         self._tool = SE3()
+        self._T_flange_des = SE3()
+        self._T_wo_modi = SE3()
 
     @property
     def dof(self) -> int:

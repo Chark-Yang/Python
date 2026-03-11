@@ -1,3 +1,4 @@
+<!-- 包含jaka_s5_modi_With_2f85.xml -->
 <mujoco model="jaka_s5 scene">
 
   <compiler angle="radian" autolimits="true" />
@@ -6,8 +7,8 @@
           
   </option>
 
-  <include file="../jaka_description/jaka_s5_auto.xml"/>
-  <include file="../robotiq_2f85/2f85.xml" />
+  <include file="../jaka_description/jaka_s5_modi.xml"/>
+  <include file="../robotiq_2f85/2f85_jaka.xml" />
 
   <statistic center="0.3 0 0.4" extent="0.8"/>
 
@@ -43,21 +44,21 @@
 			<geom name="mocap" type="sphere" size="0.000001"/>
 		</body>
 
-    <body name="Cylinder" pos="1.4 0.6 0.9" quat="1 0 0 0">
+    <!-- <body name="Cylinder" pos="1.4 0.6 0.9" quat="1 0 0 0">
 			<joint name="Cylinder" type="free" />
 			<geom name="Cylinder" type="cylinder" size="0.025 0.1" rgba="1 1 0 1" condim="6" solref="0.0000000001 1"/>
-		</body>
+		</body> -->
 
 		<body name="Box" pos="1.4 0.2 0.9" quat="1 0 0 0">
 			<joint name="Box" type="free" />
 			<geom name="Box" type="box" size="0.025 0.025 0.025" rgba="1 0 1 1" condim="6"/>
 		</body>
 
-		<body name="T_block" pos="1.4 1 0.9" quat="1 0 0 0">
+		<!-- <body name="T_block" pos="1.4 1 0.9" quat="1 0 0 0">
 			<joint name="T_block" type="free" />
 			<geom name="T_block_pt1" type="box" size="0.06 0.02 0.025" rgba="0 0.62 1 1" condim="6"/>
 			<geom name="T_block_pt2" type="box" size="0.02 0.06 0.025" pos="0.08 0 0" rgba="0 0.62 1 1" condim="6"/>
-		</body>
+		</body> -->
 
     <!--Zones-->
 		<body name="zone_pickup" pos="1.4 0.6 0.73" quat="1 0 0 0">
@@ -71,12 +72,38 @@
 		<body name = "table1" euler="0 0 0" pos= "0.8 0 0.74" >
 		  <geom name = "table1" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
 		</body>
-		<body name = "table2" euler="0 0 0" pos= "1.6 0 0.74" >base
+		<!-- <body name = "table2" euler="0 0 0" pos= "1.6 0 0.74" >base
 		  <geom name = "table2" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
-		</body>
+		</body> -->
 
 		<body name="simple_table" pos="0.8 0.6 0.69" quat="1 0 0 0">
 			<geom name="simple_table" type="box" size="0.8 0.6 0.05" rgba="0.5 0.5 0.5 0.1"/>
+		</body>
+
+	
+
+		<!-- 竖直状态末端位姿 -->
+		<!-- <body name="debug_flange_target_01" pos="0.6865 0.7182 1.777" xyaxes="1 0 0 0 0 -1 ">
+        	<geom type="sphere" size="0.01" rgba="1 1 0 0.8" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0.1 0 0" rgba="1 0 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0.1 0" rgba="0 1 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0 0.1" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+    	</body> -->
+
+		<!-- gg抓取姿势的点 -->
+		<body name="gg_grasp_sphere" pos="0.5 0 0" xyaxes="1 0 0 0 1 0 " >
+			<geom type="sphere" size="0.02" rgba="0.6 0.2 1.0 0.8" contype="0" conaffinity="0"/>
+			<geom type="cylinder" size="0.002" fromto="0 0 0 0.1 0 0" rgba="1 0 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0.1 0" rgba="0 1 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0 0.1" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+		</body>
+		
+		<!-- 竖直状态下夹爪中心点 -->
+		<body name="target_sphere" pos="0.6865 0.8482 1.777" xyaxes="1 0 0 0 0 -1 " >
+			<geom type="sphere" size="0.01" rgba="153 51 255 0.8" contype="0" conaffinity="0"/>
+			<geom type="cylinder" size="0.002" fromto="0 0 0 0.1 0 0" rgba="1 0 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0.1 0" rgba="0 1 0 1" contype="0" conaffinity="0"/>
+        	<geom type="cylinder" size="0.002" fromto="0 0 0 0 0 0.1" rgba="0 0 1 1" contype="0" conaffinity="0"/>
 		</body>
 
   </worldbody>
@@ -85,12 +112,23 @@
 		<exclude body1="flange" body2="2f85_base" />
 		<exclude body1="Link_06" body2="2f85_base" />
 		<exclude body1="Link_05" body2="2f85_base" />
-	</contact>
+		<exclude body1="jaka_base" body2="Link_01"/>
+      	<exclude body1="jaka_base" body2="Link_02"/>
+      	<exclude body1="Link_01"   body2="Link_02"/>
+      	<exclude body1="Link_01"   body2="Link_03"/>
+      	<exclude body1="Link_02"   body2="Link_03"/>
+      	<exclude body1="Link_02"   body2="Link_04"/>
+      	<exclude body1="Link_03"   body2="Link_04"/>
+      	<exclude body1="Link_03"   body2="Link_05"/>
+      	<exclude body1="Link_04"   body2="Link_05"/>
+      	<exclude body1="Link_04"   body2="Link_06"/>
+      	<exclude body1="Link_05"   body2="Link_06"/>
+  </contact>
 
   <equality>
-		<weld name="attach" body1="flange" body2="2f85_base" active="false" />
+		<weld name="attach" body1="flange" body2="2f85_base" active="false"   />
 		<weld name="attach_mocap" body1="mocap" body2="jaka_base" active="false" />
-	</equality>
+  </equality>
 
 
 </mujoco>
