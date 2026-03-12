@@ -44,21 +44,21 @@
 			<geom name="mocap" type="sphere" size="0.000001"/>
 		</body>
 
-    <!-- <body name="Cylinder" pos="1.4 0.6 0.9" quat="1 0 0 0">
-			<joint name="Cylinder" type="free" />
-			<geom name="Cylinder" type="cylinder" size="0.025 0.1" rgba="1 1 0 1" condim="6" solref="0.0000000001 1"/>
-		</body> -->
+		<body name="Cylinder" pos="1.4 0.6 0.9" quat="1 0 0 0">
+				<joint name="Cylinder" type="free" />
+				<geom name="Cylinder" type="cylinder" size="0.025 0.1" rgba="1 1 0 1" condim="6" solref="0.0000000001 1"/>
+			</body>
 
 		<body name="Box" pos="1.4 0.2 0.9" quat="1 0 0 0">
 			<joint name="Box" type="free" />
-			<geom name="Box" type="box" size="0.025 0.025 0.025" rgba="1 0 1 1" condim="6"/>
+			<geom name="Box" type="box" size="0.025 0.025 0.025" rgba="1 0 1 1" condim="3"/>
 		</body>
 
-		<!-- <body name="T_block" pos="1.4 1 0.9" quat="1 0 0 0">
+		<body name="T_block" pos="1.4 1 0.9" quat="1 0 0 0">
 			<joint name="T_block" type="free" />
 			<geom name="T_block_pt1" type="box" size="0.06 0.02 0.025" rgba="0 0.62 1 1" condim="6"/>
-			<geom name="T_block_pt2" type="box" size="0.02 0.06 0.025" pos="0.08 0 0" rgba="0 0.62 1 1" condim="6"/>
-		</body> -->
+			<geom name="T_block_pt2" type="box" size="0.02 0.06 0.025" pos="0.08 0 0" rgba="0 0.62 1 1" condim="3"/>
+		</body>
 
     <!--Zones-->
 		<body name="zone_pickup" pos="1.4 0.6 0.73" quat="1 0 0 0">
@@ -72,9 +72,9 @@
 		<body name = "table1" euler="0 0 0" pos= "0.8 0 0.74" >
 		  <geom name = "table1" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
 		</body>
-		<!-- <body name = "table2" euler="0 0 0" pos= "1.6 0 0.74" >base
+		<body name = "table2" euler="0 0 0" pos= "1.6 0 0.74" >
 		  <geom name = "table2" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
-		</body> -->
+		</body>
 
 		<body name="simple_table" pos="0.8 0.6 0.69" quat="1 0 0 0">
 			<geom name="simple_table" type="box" size="0.8 0.6 0.05" rgba="0.5 0.5 0.5 0.1"/>

@@ -53,15 +53,14 @@ class jakaGraspEnv:
         
         # 设置起始位置
         # self.robot_q = np.array([0, 0, 0, 0, 0, 0])
+        # 使用上帝之手摆好姿势之后，记得也给电机赋值self.mj_data.ctrl[:6]，要不全是0，机械臂会直接带着一百万的增益，疯狂发力，导致你看不到正确的位姿。
         self.robot_q = np.array([1.57, 1.57, 0, 1.57, 1.57, 0])
         self.robot.set_joint(self.robot_q)
-        
         self.joint_names = ["joint_1", "joint_2", "joint_3", "joint_4", "joint_5", "joint_6"]
-        
-        
         [mj.set_joint_q(self.mj_model, self.mj_data, jn, self.robot_q[i]) for i, jn in enumerate(self.joint_names)]
         mujoco.mj_forward(self.mj_model, self.mj_data)
-
+        # 告诉电机：你现在的目标就是保持在 1.57，不要动！
+        self.mj_data.ctrl[:6] = self.robot_q
 
         # 1. 计算夹爪末端当前的绝对位姿 (此时还没有设置 Tool)
         T_flange = self.robot.fkine(self.robot_q)
@@ -72,9 +71,10 @@ class jakaGraspEnv:
         T_gripper_base = sm.SE3(T_flange) 
         # print(sm.SE3(T_gripper_base))
 
-        # 不用挂载夹爪了，正向运动学求解，计算末端位姿
+        # 挂载夹爪，正向运动学求解，计算末端位姿
         mj.attach(self.mj_model, self.mj_data, "attach", "2f85", sm.SE3(T_gripper_base))
 
+        # 设置偏移，正向运动学求解夹爪末端位姿；夹爪只是显示作用，运动学计算仍然以机械臂末端为准
         robot_tool = sm.SE3.Trans(0.0, 0.13, 0.0)
         self.robot.set_tool(robot_tool)
         self.robot_T = self.robot.fkine(self.robot_q)

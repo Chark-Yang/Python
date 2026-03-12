@@ -175,6 +175,7 @@ if __name__ == '__main__':
     # 初始化仿真环境
     env = jakaGraspEnv()
     env.reset()
+
     env.mj_viewer = mujoco.viewer.launch_passive(env.mj_model, env.mj_data)
     for i in range(1000):
         env.step()
@@ -197,9 +198,6 @@ if __name__ == '__main__':
     T_wo = T_wc * T_co
     print("T_wo:\n", T_wo)
 
-
-    
-    # print(f"ikine_joint_list:\n{ikine_joint_list}")
 
     # 在画面中渲染计算出来的T_flange_world和 T_wo
     # T_flange_des是机械臂末端相对于机械臂基座的偏移,必须先求一次逆解才能获取到正常T_flange_des
@@ -265,7 +263,7 @@ if __name__ == '__main__':
 
 
     # T0->T2(抓取前10cm，上方10cm)
-    T2 = sm.SE3.Trans(-0.1, 0.0, 0.1) * T_flange_world
+    T2 = sm.SE3.Trans(-0.0, 0.0, 0.2) * T_flange_world
     print(f"抓取点前10cm  T2:{T2}")
 
     # 计算逆运动学
@@ -377,10 +375,10 @@ if __name__ == '__main__':
     print("关闭夹爪已完成") 
 
 
-    # T3 -> T4(抬起物体10cm)
+    # T3 -> T4(抬起物体30cm)
 
-    T4 = sm.SE3.Trans(0.0, 0.0, 0.1) * T3
-    print(f"抬起物体10cm  T4:{T4}")
+    T4 = sm.SE3.Trans(0.0, 0.0, 0.2) * T3
+    print(f"抬起物体30cm  T4:{T4}")
 
     # 计算逆运动学
     ikine_joint_angels = env.robot.ikine(T4)
@@ -546,7 +544,7 @@ if __name__ == '__main__':
 
     # T6->T7（下降10cm）
     time.sleep(2)
-    T7 = sm.SE3.Trans(0.0, 0.0, -0.1) * T6
+    T7 = sm.SE3.Trans(0.0, 0.0, -0.2) * T6
 
     print(f"T7:{T7}")
 
@@ -705,7 +703,7 @@ if __name__ == '__main__':
             # 于是上帝把机械臂瞬移到新位置，但是电机接受到的命令还是旧位置，于是一百万的Kp就会爆发很大的力量，进行抵抗，所以一直有很大的震荡
             env.mj_data.ctrl[:6] = waypoint
 
-            # 【神级补丁修正版】只给机械臂的6个电机做重力补偿
+            # 【神级补丁修正版】只给机械臂的6个电机做重力补偿，这样电机不会在你瞬移的时候爆发巨大的反作用力，不会发生震荡
             env.mj_data.qfrc_applied[:6] = env.mj_data.qfrc_bias[:6]
             # 确保其他物体（物块、夹爪）不受残余外力影响，正常受重力下落
             env.mj_data.qfrc_applied[6:] = 0.0
@@ -723,9 +721,6 @@ if __name__ == '__main__':
                 print("机械臂已成功到达T9点")
                 break
     
-    # for i in range(1000):
-    #     mujoco.mj_step(env.mj_model, env.mj_data)
-    #     env.mj_viewer.sync()
 
     time.sleep(2)
 
