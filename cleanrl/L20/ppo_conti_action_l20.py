@@ -13,6 +13,8 @@ import tyro
 from torch.distributions.normal import Normal
 from torch.utils.tensorboard import SummaryWriter
 
+from linker_env import LinkerHandEnv
+
 
 @dataclass
 class Args:
@@ -40,7 +42,7 @@ class Args:
     """the user or org name of the model repository from the Hugging Face Hub"""
 
     # Algorithm specific arguments
-    env_id: str = "HalfCheetah-v4"
+    env_id: str = "l20-residual-v0"
     """the id of the environment"""
     total_timesteps: int = 1000000
     """total timesteps of the experiments"""
@@ -83,14 +85,20 @@ class Args:
     num_iterations: int = 0
     """the number of iterations (computed in runtime)"""
 
+XML_PATH = os.path.join(os.path.dirname(__file__), 'scene.xml')
 
 def make_env(env_id, idx, capture_video, run_name, gamma):
     def thunk():
+        # 如果要求录像，并且是第 0 号并行环境（只录一个环境避免卡顿）
         if capture_video and idx == 0:
-            env = gym.make(env_id, render_mode="rgb_array")
+            env = LinkerHandEnv(xml_path=XML_PATH, render_mode="rgb_array")
+            # 指定录像保存路径；套上盒子，gym会自动调用env.render()来获取每帧图像并保存成视频；
             env = gym.wrappers.RecordVideo(env, f"videos/{run_name}")
         else:
-            env = gym.make(env_id)
+            env = LinkerHandEnv(xml_path=XML_PATH)
+
+        
+        # PPO 对状态和奖励的归一化极其敏感，这些 Wrapper 是算法收敛的保障
         env = gym.wrappers.FlattenObservation(env)  # deal with dm_control's Dict observation space
         env = gym.wrappers.RecordEpisodeStatistics(env)
         env = gym.wrappers.ClipAction(env)
@@ -246,24 +254,24 @@ if __name__ == "__main__":
                         writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
                         writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
 
-                        # 【核心修改 1】：打擂台保存最高分模型和方差
-                        if args.save_model and current_return > best_episodic_return:
-                            best_episodic_return = current_return
-                            best_model_path = f"runs/{run_name}/best_model.pt"
+                        # # 【核心修改 1】：打擂台保存最高分模型和方差
+                        # if args.save_model and current_return > best_episodic_return:
+                        #     best_episodic_return = current_return
+                        #     best_model_path = f"runs/{run_name}/best_model.pt"
 
-                            # 获取向量化环境里第一个子环境的统计量
-                            obs_rms = None
-                            if hasattr(envs, "envs") and hasattr(envs.envs[0], "obs_rms"):
-                                obs_rms = envs.envs[0].obs_rms
-                            elif hasattr(envs, "obs_rms"):
-                                obs_rms = envs.obs_rms
+                        #     # 获取向量化环境里第一个子环境的统计量
+                        #     obs_rms = None
+                        #     if hasattr(envs, "envs") and hasattr(envs.envs[0], "obs_rms"):
+                        #         obs_rms = envs.envs[0].obs_rms
+                        #     elif hasattr(envs, "obs_rms"):
+                        #         obs_rms = envs.obs_rms
 
-                            checkpoint = {
-                                "model_state_dict": agent.state_dict(),
-                                "obs_rms": obs_rms
-                            }
-                            torch.save(checkpoint, best_model_path)
-                            print(f"🚀 破纪录啦！新最高分: {best_episodic_return:.2f}，模型与环境状态已打包保存！")
+                        #     checkpoint = {
+                        #         "model_state_dict": agent.state_dict(),
+                        #         "obs_rms": obs_rms
+                        #     }
+                        #     torch.save(checkpoint, best_model_path)
+                        #     print(f"🚀 破纪录啦！新最高分: {best_episodic_return:.2f}，模型与环境状态已打包保存！")
 
         # bootstrap value if not done
         with torch.no_grad():

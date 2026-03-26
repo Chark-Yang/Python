@@ -167,6 +167,7 @@ if __name__ == "__main__":
     )
     start_time = time.time()
 
+    best_episodic_return = -np.inf  # 初始化历史最高分
     # TRY NOT TO MODIFY: start the game
     obs, _ = envs.reset(seed=args.seed)
     for global_step in range(args.total_timesteps):
@@ -185,10 +186,20 @@ if __name__ == "__main__":
         # TRY NOT TO MODIFY: record rewards for plotting purposes
         if "final_info" in infos:
             for info in infos["final_info"]:
-                print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
-                writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
-                writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
-                break
+                if info is not None:
+                    current_return = float(info['episode']['r'])
+                    print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
+                    writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
+                    writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
+
+                    # 【核心修改】：打擂台保存最高分模型
+                    if args.save_model and current_return > best_episodic_return:
+                        best_episodic_return = current_return
+                        best_model_path = f"runs/{run_name}/best_model.pt"
+                        # DDPG 只需要保存 Actor 和一个 Critic
+                        torch.save((actor.state_dict(), qf1.state_dict()), best_model_path)
+                        print(f"🚀 破纪录啦！新最高分: {best_episodic_return:.2f}，DDPG 模型已保存！")
+                    break
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
         real_next_obs = next_obs.copy()
@@ -216,6 +227,7 @@ if __name__ == "__main__":
             qf1_loss.backward()
             q_optimizer.step()
 
+            # 更新actor网络
             if global_step % args.policy_frequency == 0:
                 actor_loss = -qf1(data.observations, actor(data.observations)).mean()
                 actor_optimizer.zero_grad()

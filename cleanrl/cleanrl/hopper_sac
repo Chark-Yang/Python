@@ -1,0 +1,119 @@
+import os
+import gymnasium as gym
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+LOG_STD_MAX = 2
+LOG_STD_MIN = -5
+
+# ==========================================
+# 1. 搬运 SAC 的网络结构 (只需要 Actor)
+# ==========================================
+class Actor(nn.Module):
+    def __init__(self, env):
+        super().__init__()
+        self.fc1 = nn.Linear(np.array(env.single_observation_space.shape).prod(), 256)
+        self.fc2 = nn.Linear(256, 256)
+        self.fc_mean = nn.Linear(256, np.prod(env.single_action_space.shape))
+        self.fc_logstd = nn.Linear(256, np.prod(env.single_action_space.shape))
+        
+        self.register_buffer(
+            "action_scale",
+            torch.tensor((env.single_action_space.high - env.single_action_space.low) / 2.0, dtype=torch.float32)
+        )
+        self.register_buffer(
+            "action_bias",
+            torch.tensor((env.single_action_space.high + env.single_action_space.low) / 2.0, dtype=torch.float32)
+        )
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        mean = self.fc_mean(x)
+        log_std = self.fc_logstd(x)
+        log_std = torch.tanh(log_std)
+        log_std = LOG_STD_MIN + 0.5 * (LOG_STD_MAX - LOG_STD_MIN) * (log_std + 1)
+        return mean, log_std
+
+    def get_deterministic_action(self, x):
+        # 【SAC 推理专属神技】：彻底抛弃抽样，直接对均值做 tanh 激活并缩放！
+        mean, _ = self(x)
+        action = torch.tanh(mean) * self.action_scale + self.action_bias
+        return action
+
+# ==========================================
+# 2. 核心参数与环境配置
+# ==========================================
+if __name__ == "__main__":
+    env_id = "Hopper-v4"
+    
+    # 自动填入你刚跑出的 SAC 巅峰模型文件夹
+    run_name = "Hopper-v4__sac_continuous_action__1__1773902394" 
+    
+    model_path = f"runs/{run_name}/best_model.pt"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    print(f"\n🚀 准备加载 SAC 巅峰模型: {model_path}")
+
+    # 弹出 3D 渲染窗口
+    env = gym.make(env_id, render_mode="human")
+    env = gym.wrappers.RecordEpisodeStatistics(env)
+
+    # 伪装 single_space 用于初始化网络维度
+    env.single_observation_space = env.observation_space
+    env.single_action_space = env.action_space
+
+    actor = Actor(env).to(device)
+
+    # ==========================================
+    # 3. 加载权重
+    # ==========================================
+    if os.path.exists(model_path):
+        checkpoint = torch.load(model_path, map_location=device)
+        
+        # SAC 保存的是 (actor, qf1, qf2)，所以 Actor 在第 0 个位置
+        state_dict = checkpoint[0]
+        
+        # 兼容 CleanRL 官方可能遗留的维度刺客 (防患于未然)
+        if state_dict["action_scale"].shape != actor.action_scale.shape:
+            state_dict["action_scale"] = state_dict["action_scale"].view_as(actor.action_scale)
+            state_dict["action_bias"] = state_dict["action_bias"].view_as(actor.action_bias)
+            
+        actor.load_state_dict(state_dict)
+        print("✅ 神经网络脑部权重加载完毕！")
+    else:
+        raise FileNotFoundError(f"找不到模型文件，请检查路径: {model_path}")
+
+    actor.eval()
+
+    # ==========================================
+    # 4. 视觉盛宴：开始推理
+    # ==========================================
+    print("\n🎬 SAC 演出开始！")
+    test_episodes = 3
+    
+    for ep in range(test_episodes):
+        obs, _ = env.reset()
+        done = False
+        ep_return = 0
+        ep_length = 0
+        
+        while not done:
+            obs_tensor = torch.Tensor(obs).unsqueeze(0).to(device)
+            
+            with torch.no_grad():
+                # 直接调用我们刚才写的确定性动作函数！
+                action = actor.get_deterministic_action(obs_tensor)
+            
+            obs, reward, terminated, truncated, info = env.step(action.cpu().numpy()[0])
+            done = terminated or truncated
+            
+            ep_return += reward
+            ep_length += 1
+            
+        print(f"🏆 第 {ep + 1} 局结束: 存活步数 = {ep_length}, 最终得分 = {ep_return:.2f}")
+        
+    env.close()
+    print("========== SAC 推理结束 ==========\n")

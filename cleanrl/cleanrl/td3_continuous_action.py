@@ -191,6 +191,7 @@ if __name__ == "__main__":
     )
     start_time = time.time()
 
+    best_episodic_return = -np.inf  # 初始化历史最高分
     # TRY NOT TO MODIFY: start the game
     obs, _ = envs.reset(seed=args.seed)
     for global_step in range(args.total_timesteps):
@@ -210,9 +211,19 @@ if __name__ == "__main__":
         if "final_info" in infos:
             for info in infos["final_info"]:
                 if info is not None:
+                    # 记得加 float，防止被 Numpy 数组格式刺客背刺！
+                    current_return = float(info['episode']['r'])
                     print(f"global_step={global_step}, episodic_return={info['episode']['r']}")
                     writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
                     writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
+
+                    # 【核心修改】：打擂台保存最高分模型
+                    if args.save_model and current_return > best_episodic_return:
+                        best_episodic_return = current_return
+                        best_model_path = f"runs/{run_name}/best_model.pt"
+                        # TD3 需要保存 Actor 和两个 Critic
+                        torch.save((actor.state_dict(), qf1.state_dict(), qf2.state_dict()), best_model_path)
+                        print(f"🚀 破纪录啦！新最高分: {best_episodic_return:.2f}，TD3 模型已保存！")
                     break
 
         # TRY NOT TO MODIFY: save data to reply buffer; handle `final_observation`
@@ -229,10 +240,11 @@ if __name__ == "__main__":
         if global_step > args.learning_starts:
             data = rb.sample(args.batch_size)
             with torch.no_grad():
+                # 生成噪声并截断（Target Policy Smoothing 的核心）
                 clipped_noise = (torch.randn_like(data.actions, device=device) * args.policy_noise).clamp(
                     -args.noise_clip, args.noise_clip
                 ) * target_actor.action_scale
-
+                # 将噪声加到Target Actor输出的动作上，并限制在合法动作范围内
                 next_state_actions = (target_actor(data.next_observations) + clipped_noise).clamp(
                     envs.single_action_space.low[0], envs.single_action_space.high[0]
                 )

@@ -1,0 +1,81 @@
+<mujoco model="linker_grasping_scene">
+  
+  <compiler angle="radian" autolimits="true"/>
+  <option timestep="0.002" iterations="50">
+    <flag constraint="enable"/>
+  </option>
+
+  <include file="linker_hand.xml"/>
+
+  <visual>
+    <global offwidth="1280" offheight="720"/>
+    <map znear="0.05"/>
+    <headlight ambient="0.4 0.4 0.4" diffuse="0.6 0.6 0.6" specular="0.2 0.2 0.2"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3" markrgb="0.2 0.2 0.2" width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0.02"/>
+    
+
+    <mesh name ="table" file="assets/table/sigmund_table.stl" scale= "1 1 1"/>
+  </asset>
+
+  <worldbody>
+    <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1" conaffinity="1" />
+    <light name="top_light" pos="0 0 2" dir="0 0 -1" directional="true" diffuse="0.8 0.8 0.8" specular="0.2 0.2 0.2"/>
+    
+    <body name="world_frame" pos="0 0 0">
+      <geom name="X" type="cylinder" size="0.005" fromto="0 0 0 0.2 0 0" rgba="1 0 0 1" contype="0" conaffinity="0"/>
+      <geom name="Y" type="cylinder" size="0.005" fromto="0 0 0 0 0.2 0" rgba="0 1 0 1" contype="0" conaffinity="0"/>
+      <geom name="Z" type="cylinder" size="0.005" fromto="0 0 0 0 0 0.2" rgba="0 0 1 1" contype="0" conaffinity="0"/> 
+    </body>
+
+    <camera name="main_cam"  pos="1.2 -1.0 0.9" euler="1.57 0 0"/>
+    <!-- <geom name="cam_marker" type="sphere" pos="1.2 0.5 1.5" size="0.01" rgba="1 0 0 1" contype="0" conaffinity="0"/> -->
+    <!-- euler="1.57 1.57 1.57" -->
+    <!-- <body name="cam_visual_frame" pos="1.2 -1.0 0.9" euler="1.57 0 0" >
+        
+        <geom type="sphere" size="0.02" rgba="1 1 1 1" contype="0" conaffinity="0"/>
+        
+        <geom type="cylinder" fromto="0 0 0  0.3 0 0" size="0.005" rgba="1 0 0 1" contype="0" conaffinity="0"/>
+        
+        <geom type="cylinder" fromto="0 0 0  0 0.3 0" size="0.005" rgba="0 1 0 1" contype="0" conaffinity="0"/>
+        
+        <geom type="cylinder" fromto="0 0 0  0 0 0.3" size="0.005" rgba="0 0 1 1" contype="0" conaffinity="0"/>
+        
+        <geom type="cylinder" fromto="0 0 0  0 0 -0.5" size="0.008" rgba="1 1 0 1" contype="0" conaffinity="0"/>
+        
+    </body> -->
+    
+    <!-- object -->
+    <!-- <body name="target_cup" pos="1.4 0.6 0.791">
+      <freejoint name="cup_freejoint"/>
+      <inertial pos="0 0 0" mass="0.1" diaginertia="0.0001 0.0001 0.0001"/>
+      <geom name="cup_geom" type="cylinder" size="0.03 0.05" rgba="0.2 0.6 0.8 1" contype="1" conaffinity="1"/>
+    </body> -->
+    <body name="Cylinder" pos="1.4 0.2 0.841" quat="1 0 0 0">
+        <freejoint name="Cylinder_freejoint" />
+        
+        <inertial pos="0 0 0" mass="0.1" diaginertia="0.0001 0.0001 0.0001"/>
+        <geom name="Cylinder" type="cylinder" size="0.025 0.1" rgba="1 1 0 1" contype="1" conaffinity="1"/>
+    </body>
+
+
+    <!-- table -->
+    <body name = "table1" euler="0 0 0" pos= "0.8 0 0.74" >
+		<geom name = "table1" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
+	  </body>
+    <body name = "table2" euler="0 0 0" pos= "1.6 0 0.74" >
+		<geom name = "table2" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
+	  </body>
+
+    <body name="simple_table" pos="0.8 0.6 0.69" quat="1 0 0 0">
+		<geom name="simple_table" type="box" size="0.8 0.6 0.05" rgba="0.5 0.5 0.5 0.1" contype="1" conaffinity="1"/>
+	  </body>
+    
+    
+  </worldbody>
+
+</mujoco>
