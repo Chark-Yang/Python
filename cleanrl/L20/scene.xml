@@ -5,13 +5,20 @@
     <flag constraint="enable"/>
   </option>
 
-  <include file="linker_hand.xml"/>
+  
+
+  <!-- center相机焦点坐标(如果拖拽画面，相机会永远围绕着这个中心点旋转) extent场景尺度/缩放距离（相机会根据这个位置自动后退1米左右，确保把1米范围内的东西框进画面）  -->
+  <statistic center="1.2 0.0 0.8" extent="1.0"/>
 
   <visual>
-    <global offwidth="1280" offheight="720"/>
+  <!-- azimuth 方位角，控制相机在水平面上的左右环绕，地球仪经度，默认是0正前方，正数向右绕，负数向左绕 -->
+  <!-- elevation (仰角/俯仰角)控制相机的上下倾斜，通常负数，表示向下倾斜 -->
+    <global azimuth="140" elevation="-20" offwidth="1280" offheight="720"/>
     <map znear="0.05"/>
     <headlight ambient="0.4 0.4 0.4" diffuse="0.6 0.6 0.6" specular="0.2 0.2 0.2"/>
   </visual>
+
+  <include file="linker_hand_capsule.xml"/>
 
   <asset>
     <texture type="skybox" builtin="gradient" rgb1="0.3 0.5 0.7" rgb2="0 0 0" width="512" height="3072"/>
@@ -26,13 +33,13 @@
     <geom name="floor" size="0 0 0.05" type="plane" material="groundplane" contype="1" conaffinity="1" />
     <light name="top_light" pos="0 0 2" dir="0 0 -1" directional="true" diffuse="0.8 0.8 0.8" specular="0.2 0.2 0.2"/>
     
-    <body name="world_frame" pos="0 0 0">
+    <!-- <body name="world_frame" pos="0 0 0">
       <geom name="X" type="cylinder" size="0.005" fromto="0 0 0 0.2 0 0" rgba="1 0 0 1" contype="0" conaffinity="0"/>
       <geom name="Y" type="cylinder" size="0.005" fromto="0 0 0 0 0.2 0" rgba="0 1 0 1" contype="0" conaffinity="0"/>
       <geom name="Z" type="cylinder" size="0.005" fromto="0 0 0 0 0 0.2" rgba="0 0 1 1" contype="0" conaffinity="0"/> 
-    </body>
+    </body> -->
 
-    <camera name="main_cam"  pos="1.2 -1.0 0.9" euler="1.57 0 0"/>
+    <camera name="main_cam"  pos="1.4 1.0 0.9" euler="1.57 3.14 0"/>
     <!-- <geom name="cam_marker" type="sphere" pos="1.2 0.5 1.5" size="0.01" rgba="1 0 0 1" contype="0" conaffinity="0"/> -->
     <!-- euler="1.57 1.57 1.57" -->
     <!-- <body name="cam_visual_frame" pos="1.2 -1.0 0.9" euler="1.57 0 0" >
@@ -55,24 +62,23 @@
       <inertial pos="0 0 0" mass="0.1" diaginertia="0.0001 0.0001 0.0001"/>
       <geom name="cup_geom" type="cylinder" size="0.03 0.05" rgba="0.2 0.6 0.8 1" contype="1" conaffinity="1"/>
     </body> -->
-    <body name="Cylinder" pos="1.4 0.2 0.841" quat="1 0 0 0">
+    <!-- <body name="Cylinder" pos="1.4 0.2 0.841" quat="1 0 0 0">
         <freejoint name="Cylinder_freejoint" />
-        
         <inertial pos="0 0 0" mass="0.1" diaginertia="0.0001 0.0001 0.0001"/>
         <geom name="Cylinder" type="cylinder" size="0.025 0.1" rgba="1 1 0 1" contype="1" conaffinity="1"/>
-    </body>
+    </body> -->
 
 
     <!-- table -->
     <body name = "table1" euler="0 0 0" pos= "0.8 0 0.74" >
-		<geom name = "table1" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
+		  <geom name = "table1" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
 	  </body>
     <body name = "table2" euler="0 0 0" pos= "1.6 0 0.74" >
-		<geom name = "table2" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
+		  <geom name = "table2" type="mesh" mesh="table" group="2" rgba="0.35 0.35 0.35 1" mass="0" contype="0" conaffinity="0"/>
 	  </body>
 
     <body name="simple_table" pos="0.8 0.6 0.69" quat="1 0 0 0">
-		<geom name="simple_table" type="box" size="0.8 0.6 0.05" rgba="0.5 0.5 0.5 0.1" contype="1" conaffinity="1"/>
+		  <geom name="simple_table" type="box" size="0.8 0.6 0.05" rgba="0.5 0.5 0.5 0.1" contype="1" conaffinity="1"/>
 	  </body>
     
     

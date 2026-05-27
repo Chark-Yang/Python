@@ -254,24 +254,24 @@ if __name__ == "__main__":
                         writer.add_scalar("charts/episodic_return", info["episode"]["r"], global_step)
                         writer.add_scalar("charts/episodic_length", info["episode"]["l"], global_step)
 
-                        # # 【核心修改 1】：打擂台保存最高分模型和方差
-                        # if args.save_model and current_return > best_episodic_return:
-                        #     best_episodic_return = current_return
-                        #     best_model_path = f"runs/{run_name}/best_model.pt"
+                        # 【核心修改 1】：打擂台保存最高分模型和方差
+                        if args.save_model and current_return > best_episodic_return:
+                            best_episodic_return = current_return
+                            best_model_path = f"runs/{run_name}/best_model.pt"
 
-                        #     # 获取向量化环境里第一个子环境的统计量
-                        #     obs_rms = None
-                        #     if hasattr(envs, "envs") and hasattr(envs.envs[0], "obs_rms"):
-                        #         obs_rms = envs.envs[0].obs_rms
-                        #     elif hasattr(envs, "obs_rms"):
-                        #         obs_rms = envs.obs_rms
+                            # 获取向量化环境里第一个子环境的统计量
+                            obs_rms = None
+                            if hasattr(envs, "envs") and hasattr(envs.envs[0], "obs_rms"):
+                                obs_rms = envs.envs[0].obs_rms
+                            elif hasattr(envs, "obs_rms"):
+                                obs_rms = envs.obs_rms
 
-                        #     checkpoint = {
-                        #         "model_state_dict": agent.state_dict(),
-                        #         "obs_rms": obs_rms
-                        #     }
-                        #     torch.save(checkpoint, best_model_path)
-                        #     print(f"🚀 破纪录啦！新最高分: {best_episodic_return:.2f}，模型与环境状态已打包保存！")
+                            checkpoint = {
+                                "model_state_dict": agent.state_dict(),
+                                "obs_rms": obs_rms
+                            }
+                            torch.save(checkpoint, best_model_path)
+                            print(f"🚀 破纪录啦！新最高分: {best_episodic_return:.2f}，模型与环境状态已打包保存！")
 
         # bootstrap value if not done
         with torch.no_grad():

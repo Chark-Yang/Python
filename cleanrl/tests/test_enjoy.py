@@ -23,3 +23,4 @@ def test_dqn_jax():
         shell=True,
         check=True,
     )
+

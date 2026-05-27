@@ -85,7 +85,19 @@ class LinkerHandEnv(gym.Env):
             else:
                 self.base_ctrl[i] = 0.0  # 强化学习控制的5个关节在0
 
-        print("预设姿态 base_ctrl:", self.base_ctrl)
+        # print("预设姿态 base_ctrl:", self.base_ctrl)
+
+        # 获取 6 个手腕电机的索引
+        self.wrist_actuators = [
+            "wrist_x_pos", "wrist_y_pos", "wrist_z_pos", 
+            "wrist_roll_pos", "wrist_pitch_pos", "wrist_yaw_pos"
+        ]
+        self.wrist_act_indices = []
+        for act_name in self.wrist_actuators:
+            act_id = mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_ACTUATOR, act_name)
+            if act_id != -1:
+                self.wrist_act_indices.append(act_id)
+
 
 
         # 3. 定义状态空间 (Observation Space)
@@ -108,16 +120,17 @@ class LinkerHandEnv(gym.Env):
 
         # 获取水杯在世界坐标系中的 3D 绝对坐标 (X, Y, Z)
         # 注意："Cylinder" 是你在 scene.xml 里给杯子 body 命的名
-        obj_pos = self.data.body("Cylinder").xpos.copy()
+        # obj_pos = self.data.body("Cylinder").xpos.copy()
         
         # 获取手掌根部在世界坐标系中的 3D 绝对坐标
-        hand_pos = self.data.body("hand_root").xpos.copy()
+        # hand_pos = self.data.body("hand_root").xpos.copy()
         
         # 计算相对位置向量 (引导网络理解方向)
-        rel_pos = obj_pos - hand_pos
+        # rel_pos = obj_pos - hand_pos
         
         # 将它们拼接成一个一维 numpy 数组送给神经网络，关节状态 + 触觉传感器数据 +目标位置 + 当前手位置 + 相对距离
-        obs = np.concatenate([qpos, qvel, sensor_data, obj_pos, hand_pos, rel_pos])
+        # obs = np.concatenate([qpos, qvel, sensor_data, obj_pos, hand_pos, rel_pos])
+        obs = np.concatenate([qpos, qvel, sensor_data])
         return obs.astype(np.float32)
 
     def render(self):
@@ -141,8 +154,30 @@ class LinkerHandEnv(gym.Env):
         
         # （可选）在这里可以给关节加入一点随机的初始噪声，增加鲁棒性
         # self.data.qpos[:] += self.np_random.uniform(-0.05, 0.05, self.model.nq)
-        
+
         mujoco.mj_forward(self.model, self.data) # 更新物理状态
+
+        # 核心逻辑：RL 训练前的“预抓取轨迹”执行
+        # 阶段一：高空姿态对齐 (假设用 2秒完成， timestep=0.002, 需要 1000 步)
+        phase1_pose = [0.05, 0.0, 0.0, 1.57, 1.57, 0.0]
+        for idx, val in zip(self.wrist_act_indices, phase1_pose):
+            self.base_ctrl[idx] = val
+            
+        self.data.ctrl[:] = self.base_ctrl
+        for _ in range(1000): 
+            mujoco.mj_step(self.model, self.data)
+
+        # 阶段二：垂直下降抓取 (假设用 1秒完成， 需要 500 步)
+        phase2_pose = [0.05, 0.0, -0.55, 1.57, 1.57, 0.0] 
+        for idx, val in zip(self.wrist_act_indices, phase2_pose):
+            self.base_ctrl[idx] = val
+            
+        self.data.ctrl[:] = self.base_ctrl
+        for _ in range(500):
+            mujoco.mj_step(self.model, self.data)
+
+        mujoco.mj_forward(self.model, self.data) # 更新物理状态
+
         
         obs = self._get_obs()
         info = {} # 可以用来传递额外的调试信息
@@ -197,34 +232,64 @@ class LinkerHandEnv(gym.Env):
         """
         # reward = 0.0
 
-        # 1. 获取最新坐标
-        obj_pos = self.data.body("Cylinder").xpos.copy()
-        hand_pos = self.data.body("hand_root").xpos.copy()
+        # # 1. 获取最新坐标
+        # obj_pos = self.data.body("Cylinder").xpos.copy()
+        # hand_pos = self.data.body("hand_root").xpos.copy()
 
         # 2. 计算手和杯子的三维空间直线距离
-        dist = np.linalg.norm(obj_pos - hand_pos)
+        # dist = np.linalg.norm(obj_pos - hand_pos)
 
         # 3. 距离奖励核心公式：使用负指数映射。
         # 距离越小，这个值越接近 1；距离越远，越接近 0。这能给网络一个非常平滑的梯度引导。
-        reward_dist = np.exp(-5.0 * dist)
+        # reward_dist = np.exp(-5.0 * dist)
 
         # 4. 动作平滑惩罚：微微惩罚剧烈运动，防止手抽风
         # action_penalty = -0.01 * np.sum(np.square(action))
 
-        # 5. （可选）终极奖励：如果手真的靠近到杯子 5 厘米以内，给一个暴击分！
-        reward_reach = 0.0
-        if dist < 0.05:
-            reward_reach = 5.0
+        # # 5. （可选）终极奖励：如果手真的靠近到杯子 5 厘米以内，给一个暴击分！
+        # reward_reach = 0.0
+        # if dist < 0.05:
+        #     reward_reach = 5.0
         
+        reward_sensor = 0.0
         # 示例 2: 触觉奖励 (Touch Reward) - 如果传感器检测到力，给予巨大奖励
         # 假设 sensordata 里的第一个值是食指的力传感器
-        # if len(self.data.sensordata) > 0:
-        #     index_force = self.data.sensordata[0]
-        #     if index_force > 0.01:
-        #         reward += 1.0 # 摸到东西了！
+
+        reward_sensor = 0.0
         
-        # total_reward = reward_dist + action_penalty + reward_reach
-        total_reward = reward_dist + reward_reach
+        # 读取全部 5 个传感器的受力数据 (假设你的 sensor 标签里依次定义了食指到大拇指)
+        # 传感器顺序: [index, middle, ring, pinky, thumb]
+        touch_forces = np.array(self.data.sensordata[:5])
+        
+        # 过滤掉物理引擎的数值底噪 (受力大于 0.01 才算真正碰到)
+        active_touches = touch_forces > 0.01 
+        num_touching_fingers = np.sum(active_touches) # 统计有几根手指碰到了
+
+        if num_touching_fingers > 0:
+            # A. 接触数量奖励：每多一根手指碰到，给 1.0 分基础分
+            reward_sensor += num_touching_fingers * 1.0
+            
+            # B. 连续力觉奖励：鼓励出力，但防止“死里捏”
+            # 使用 np.log1p(x) 即 ln(1+x)，把巨大的物理力映射到平滑的小数值区间
+            # clip 限制最大受力，防止网络学会把杯子捏爆来刷分
+            force_reward = np.sum(np.log1p(np.clip(touch_forces, 0, 10.0))) * 0.1
+            reward_sensor += force_reward
+
+            # C. 协同抓取暴击分 (Synergy / Force Closure Bonus) 【论文核心创新点】
+            # 在机器人学中，最稳固的抓取必须是“大拇指”和“其他手指”形成对立夹击
+            thumb_touching = active_touches[4] # 大拇指是最后一个传感器
+            other_fingers_touching = np.sum(active_touches[:4])
+            
+            if thumb_touching and other_fingers_touching > 0:
+                reward_sensor += 5.0  # 形成对立抓取，给大分！
+                
+            if num_touching_fingers == 5:
+                reward_sensor += 10.0 # 五指全包裹 (Power Grasp)，终极大满贯！
+
+        # ================= 3. 组合总奖励 =================
+        # 必须把动作惩罚加进去，否则网络只会疯狂输出极大值
+        
+        total_reward = reward_sensor
                         
         return total_reward
 
@@ -233,7 +298,7 @@ class LinkerHandEnv(gym.Env):
 # ==========================================
 if __name__ == "__main__":
     print("初始化环境...")
-    XML_PATH = os.path.join(os.path.dirname(__file__), 'linker_hand.xml')
+    XML_PATH = os.path.join(os.path.dirname(__file__), 'scene.xml')
     env = LinkerHandEnv(xml_path=XML_PATH) # 确保 XML 名字和你的匹配
     
     obs, info = env.reset()
