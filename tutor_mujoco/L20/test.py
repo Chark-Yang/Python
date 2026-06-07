@@ -1,3 +1,5 @@
+# 测试l20模型能否成功加载并仿真
+
 import mujoco.viewer
 import os
 import time

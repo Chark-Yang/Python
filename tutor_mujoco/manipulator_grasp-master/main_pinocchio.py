@@ -1,7 +1,13 @@
 """
-和源码main.py并列，互相独立
+和源码main.py并列,互相独立;
 在jakaGraspEnv使用pinocchio库实现运动规划
 
+jaka + graspnet + 二指夹爪实现物体的抓取与搬运
+
+Run command example:
+conda activate mujoco_graspnet
+    cd 到当前目录下，   
+    python main_pinocchio.py
 """
 
 import os

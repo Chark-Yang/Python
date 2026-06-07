@@ -1,0 +1,37 @@
+"""
+data检测成功率
+"""
+
+import cv2
+import os
+
+# （列，行），是内角点的数量
+
+CHESSBOARD_SIZE = (8, 11)
+
+success_num = 0
+
+for i in range(30):
+
+    img = cv2.imread(
+        f"calib_data/{i:03d}.jpg"
+    )
+
+    gray = cv2.cvtColor(
+        img,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    ret, corners = cv2.findChessboardCorners(
+        gray,
+        CHESSBOARD_SIZE
+    )
+
+    print(i, ret)
+
+    if ret:
+        success_num += 1
+
+print(
+    f"{success_num}/30 success"
+)

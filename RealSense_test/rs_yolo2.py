@@ -31,4 +31,4 @@ while True:
         break
 
 pipeline.stop()
-cv2.destroyAllWindows()
+cv2.destroyAllWindows()  
