@@ -179,6 +179,8 @@ class JointSpaceTrajectory:
             pass
         return self.waypoint
 
+
+
 if __name__ == '__main__':
     # 初始化网络
     net = get_net()

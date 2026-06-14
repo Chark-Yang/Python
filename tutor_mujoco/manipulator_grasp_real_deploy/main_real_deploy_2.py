@@ -53,6 +53,8 @@ import ikpy.chain
 import cv2
 import pyrealsense2 as rs
 
+import jkrc  
+
 
 def get_net():
     net = GraspNet(input_feature_dim=0, num_view=300, num_angle=12, num_depth=4,
@@ -83,10 +85,27 @@ def load_yolo_model(
     if device is None:
         device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
-    if weights.endswith('.pt'):
-        model = torch.hub.load('ultralytics/yolov5', 'custom', path=weights, force_reload=False)
-    else:
-        model = torch.hub.load('ultralytics/yolov5', weights, pretrained=True, force_reload=False)
+    # YOLOv5 源码本地目录（torch hub 缓存位置）
+    hub_dir = os.path.expanduser('~/.cache/torch/hub/ultralytics_yolov5_master')
+    if not os.path.isdir(hub_dir):
+        raise FileNotFoundError(
+            f"未找到本地 YOLOv5 仓库: {hub_dir}\n"
+            "请先运行一次网络版的 torch.hub.load 或手动克隆:\n"
+            "git clone https://github.com/ultralytics/yolov5 ~/.cache/torch/hub/ultralytics_yolov5_master"
+        )
+
+    # 如果 weights 是本地 .pt 文件，保持；否则作为模型名自动拼接
+    if not weights.endswith('.pt'):
+        weights = os.path.join(hub_dir, f'{weights}.pt')  # 如 yolov5s.pt
+
+    # 使用本地源码加载，完全不联网
+    model = torch.hub.load(
+        hub_dir,
+        'custom',
+        path=weights,
+        source='local',
+        trust_repo=True
+    )
 
     model.to(device)
     model.conf = conf
@@ -238,7 +257,7 @@ def get_realsense_imgs(pipeline,
     warmup=30,
     show=True,
     min_depth=0.15,
-    max_depth=1.5,
+    max_depth=2.0,
 ):
     """
     返回：
@@ -382,7 +401,7 @@ def get_and_process_data(imgs):
     cloud = create_point_cloud_from_depth_image(depth, camera, organized=True)
 
     # 完整场景点云：用于碰撞检测
-    scene_mask = (depth > 0.15) & (depth < 0.8)
+    scene_mask = (depth > 0.15) & (depth < 2.0)
     scene_points = cloud[scene_mask]
     scene_colors = color[scene_mask]
     scene_cloud_o3d = build_o3d_cloud(scene_points, scene_colors)
@@ -496,16 +515,67 @@ class JointSpaceTrajectory:
             pass
         return self.waypoint
 
+def build_camera_to_base(R, t):
+    """
+    根据手眼标定结果构造 T_cam2base (相机系 → 基座系)
+    R : 3x3 旋转矩阵
+    t : 3x1 平移向量
+    返回 4x4 numpy 矩阵
+    """
+    T = np.eye(4)
+    T[:3, :3] = R
+    T[:3, 3] = t.flatten()
+    return T
+
+def grasp_in_base_frame(gg, T_cam2base, index = 0):
+    """
+    将 GraspGroup 中第 index 个抓取位姿从相机系转到基座系
+    gg : GraspGroup 对象
+    index : int
+    T_cam2base : 4x4 数组
+    返回 sm.SE3 对象（便于后面取平移、旋转）
+    """
+    # 抓取在相机系下的位姿 (sm.SE3)
+    T_gg2cam = sm.SE3.Trans(gg.translations[index]) * sm.SE3(
+        sm.SO3.TwoVectors(
+            x=gg.rotation_matrices[index][:, 0],
+            y=gg.rotation_matrices[index][:, 1]
+        )
+    )
+    
+    # 转换
+    T_gg2base = T_cam2base @ T_gg2cam.A   # 4x4 矩阵相乘
+    
+    # # 拆成 R 和 t，用专门的方法构造 SE3
+    # R = T_gg2base[:3, :3]
+    # t = T_gg2base[:3, 3]
+    
+    # return sm.SE3.Trans(t) * sm.SE3(sm.SO3(R))                # 转为 SE3 对象，方便提取 xyz/rpy
+    # 【修改部分】：直接用 4x4 齐次变换矩阵构造 SE3
+    # 加入 check=False 防止由于手眼标定浮点数精度导致的“非正交矩阵”报错
+    return sm.SE3(T_gg2base, check=False)
+
+
 if __name__ == '__main__':
+
+    R_cam2base = np.array([[-0.93496679, -0.27835819,  0.21989502],
+                       [-0.35437203,  0.70486576, -0.61447923],
+                       [ 0.01604885, -0.65244231, -0.75766844]])
+    t_cam2base = np.array([[0.37511213],
+                        [0.08279032],
+                        [0.65419358]])
+    T_base_cam = build_camera_to_base(R_cam2base, t_cam2base)
+
+    # 机械臂初始化
+    robot = jkrc.RC("192.168.2.155")#返回机器人对象  
+
     # 如果你只想抓 COCO 里的某一类，写 target_class='bottle' 或 'cup'
     # 如果设为 None，则取 YOLO 检测置信度最高的物体
     TARGET_CLASS = 'bottle'
 
     # 如果你有自己的训练权重，改成例如：
-    # YOLO_WEIGHTS = '/home/chark/Python/yolov5/runs/train/exp/weights/best.pt'
-    YOLO_WEIGHTS = 'yolov5s'
+    YOLO_WEIGHTS = '/home/chark/Python/tutor_mujoco/manipulator_grasp_real_deploy/yolov5s.pt'
 
-    
     # 初始化网络
     net = get_net()
     yolo_model = load_yolo_model(weights=YOLO_WEIGHTS, conf=0.35, iou=0.45)
@@ -513,43 +583,54 @@ if __name__ == '__main__':
     pipeline, align, depth_scale = start_realsense()
 
     try:
-        print("[提示] 点击 RealSense 窗口，按 s 采集当前帧并送入 GraspNet。")
-        print("[提示] 按 q 或 ESC 退出。")
-        print(f"[提示] 当前 TARGET_CLASS = {TARGET_CLASS}，None 表示取置信度最高的检测框。")
-        
-        imgs = get_realsense_imgs(
-            pipeline=pipeline,
-            align=align,
-            depth_scale=depth_scale,
-            yolo_model=yolo_model,
-            target_class=TARGET_CLASS,
-            warmup=30,
-            show=True,
-            min_depth=0.15,
-            max_depth=1.5,
-        )
+        while True:
+            print("[提示] 点击 RealSense 窗口，按 s 采集当前帧并送入 GraspNet。")
+            print("[提示] 按 q 或 ESC 退出。")
+            print(f"[提示] 当前 TARGET_CLASS = {TARGET_CLASS}，None 表示取置信度最高的检测框。")
 
-        print("[GraspNet] 正在基于 YOLO mask 后的目标点云生成抓取位姿...")
-
-        gg = generate_grasps(net, imgs, visual=True)
-
-        print("========== GraspNet 输出 ==========")
-        print("抓取位置 translation，单位 m，相机坐标系下:")
-        print(gg.translations[0])
-
-        print("抓取姿态 rotation matrix，相机坐标系下:")
-        print(gg.rotation_matrices[0])
-
-        T_cg = sm.SE3.Trans(gg.translations[0]) * sm.SE3(
-            sm.SO3.TwoVectors(
-                x=gg.rotation_matrices[0][:, 0],
-                y=gg.rotation_matrices[0][:, 1]
+            imgs = get_realsense_imgs(
+                pipeline=pipeline,
+                align=align,
+                depth_scale=depth_scale,
+                yolo_model=yolo_model,
+                target_class=TARGET_CLASS,
+                warmup=30,
+                show=True,
+                min_depth=0.15,
+                max_depth=2.0,
             )
-        )
 
-        print("T_cg: grasp pose in camera frame")
-        print(T_cg)
+            print("[GraspNet] 正在基于 YOLO mask 后的目标点云生成抓取位姿...")
 
+            gg = generate_grasps(net, imgs, visual=True)
+
+            print("========== GraspNet 输出 ==========")
+            print("抓取位置 translation，单位 m，相机坐标系下:")
+            print(gg.translations[0])
+
+            print("抓取姿态 rotation matrix，相机坐标系下:")
+            print(gg.rotation_matrices[0])
+
+            # 等待用户按键确认
+            print("\n确认此抓取？在终端输入 c 继续，其他键放弃，q 退出程序。")
+            key = input(">>> ").strip().lower()
+            if key == 'q':
+                break
+            if key != 'c':
+                print("放弃该抓取，重新采集。")
+                continue
+
+            # 转换到基座系
+            T_base_grasp = grasp_in_base_frame(gg, T_base_cam, 0)
+            print("\n基座系下抓取位姿:")
+            print(T_base_grasp)
+
+            # ---------- 机械臂运动 ----------
+            # 这里调用你实际的 jaka 控制接口
+            # move_robot_to_pose(T_base_grasp)   # 自定义函数
+            break   # 执行一次抓取后退出，或根据需求继续循环
+
+        
     except KeyboardInterrupt:
         print("用户退出。")
 
