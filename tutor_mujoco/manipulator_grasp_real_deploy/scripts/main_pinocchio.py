@@ -193,7 +193,7 @@ if __name__ == '__main__':
 
     gg = generate_grasps(net, imgs, True)
 
-    # 抓取位置
+    # 抓取位置， T_wc是cam在world中的位姿，T_co是gg在cam中的位姿，T_wo是gg在world中的位姿
     robot = env.robot
     T_wb = robot.base
     n_wc = np.array([0.0, -1.0, 0.0])
@@ -208,10 +208,10 @@ if __name__ == '__main__':
     print("T_wo:\n", T_wo)
 
 
-    # 在画面中渲染计算出来的T_flange_world和 T_wo
-    # T_flange_des是机械臂末端相对于机械臂基座的偏移,必须先求一次逆解才能获取到正常T_flange_des
+    # 要由gg计算夹爪目标位姿，需要通过get_T_flange_des函数计算
+    # T_flange_des是机械臂末端相对于机械臂基座的偏移,用于求解逆解，因为逆解需要的基座标系的机械臂末端位姿，而非世界坐标系的机械臂末端位姿
     # T_flange_world是机械臂末端在全局坐标系中位姿
-    # env.robot.ikine(T_wo)
+    
 
     T_flange_des = env.robot.get_T_flange_des(T_wo)
     T_flange_world = T_wb * sm.SE3(T_flange_des)

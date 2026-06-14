@@ -1,14 +1,14 @@
 """
 准备手眼标定(Hand-Eye Calibration)的输入数据,它读取事先采集的图像和对应的机械臂末端位姿，
-通过棋盘格检测计算出标定板(target）在相机（cam）下的位姿，
-同时将机械臂末端（gripper）在基座（base）下的位姿转换成标定所需的形式
+通过棋盘格检测计算出标定板(target)在相机(cam)下的位姿，
+同时将机械臂末端(gripper)在基座(base)下的位姿转换成标定所需的形式
 
 原本从机械臂读取的末端位姿 (x,y,z,rx,ry,rz) 通常表示 
-末端坐标系（gripper）的原点在基坐标系（base）下的位置，
-以及 末端坐标系相对于基坐标系的姿态。也就是说，它描述的是 末端 → 基座 的变换（记为 T_base_gripper）。
+末端坐标系(gripper)的原点在基坐标系(base)下的位置，
+也就是说，它描述的是 末端 → 基座 的变换（记为 T_base_gripper)。
 
-R_target2cam 和 t_target2cam，标定板坐标系 → 相机坐标系 的旋转矩阵和平移向量
-R_gripper2base 和 t_gripper2base,机械臂末端（gripper）坐标系 → 机械臂基座（base）坐标系 的旋转矩阵和平移向量
+R_target2cam 和 t_target2cam,标定板坐标系 → 相机坐标系 的旋转矩阵和平移向量
+R_gripper2base 和 t_gripper2base,机械臂末端(gripper)坐标系 → 机械臂基座(base)坐标系 的旋转矩阵和平移向量
 
 """
 
@@ -19,7 +19,7 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 
-DATA_DIR = "../calib_data"
+DATA_DIR = "260614_data2"   # 你采集数据的文件夹
 
 CHESSBOARD_SIZE = (8, 11)
 SQUARE_SIZE = 0.015
@@ -112,11 +112,16 @@ for idx in range(1000):
     )
 
     x, y, z, rx, ry, rz = pose
-
+    # 第一次尝试使用xyz内旋，
     R_gripper2base = Rotation.from_euler(
         'xyz',
         [rx, ry, rz]
     ).as_matrix()
+    # 第2次使用XYZ外旋，大写表示外旋，不行，重投影误差更大
+    # R_gripper2base = Rotation.from_euler(
+    #     'XYZ',
+    #     [rx, ry, rz]
+    # ).as_matrix()
 
     t_gripper2base = np.array(
         [x, y, z]
@@ -146,7 +151,7 @@ print(
 
 # 根据AX=XB的推导公式，保存相应的数据
 np.savez(
-    "calibrateHandEye_input.npz",
+    "calibrateHandEye_input_260614.npz",
 
     R_board2cam=np.array(
         R_board2cam_list

@@ -1,15 +1,15 @@
 """
 这段代码是用于“眼在手外”场景的手眼标定
-使用cv2.calibrateHandEye函数，该函数默认是按照“眼在手上”的逻辑设计的，
+使用cv2.calibrateHandEye函数,该函数默认是按照“眼在手上”的逻辑设计的，
 但通过对输入参数进行数学变换，就可以用于“眼在手外”。
 
-通常可以使用机械臂API 读到“法兰相对于基座的位姿T_gripper2base”，
-AX=XB公式中使用的也是T_gripper2base”，
+通常可以使用机械臂API 读到“法兰相对于基座的位姿T_gripper2base”,
+AX=XB公式中使用的也是T_gripper2base”,
 但调用函数时需要输入T_base2gripper 即原本的T_gripper2base的逆矩阵。
-相机位姿保持不变，仍然输入T_board2cam(公式和函数保持一致)
+相机位姿保持不变,仍然输入T_board2cam(公式和函数保持一致)
 
 最后函数返回的时候
-cv2.calibrateHandEye 返回的 R_cam2gripper 和 t_cam2gripper，
+cv2.calibrateHandEye 返回的 R_cam2gripper 和 t_cam2gripper,
 实际上就是相机坐标系相对于机械臂基座坐标系的变换矩阵 T_cam2base
 """
 
@@ -18,7 +18,7 @@ import yaml
 import numpy as np
 
 data = np.load(
-    "calibrateHandEye_input.npz"
+    "calibrateHandEye_input_260614.npz"
 )
 
 R_board2cam = data[
@@ -76,5 +76,5 @@ result = {
     "t_cam2base": t_cam2base.reshape(3).tolist()
 }
 
-with open("handeye.yaml", "w") as f:
+with open("handeye_260614.yaml", "w") as f:
     yaml.dump(result, f, default_flow_style=False) # 加上 default_flow_style=False 让 yaml 更易读

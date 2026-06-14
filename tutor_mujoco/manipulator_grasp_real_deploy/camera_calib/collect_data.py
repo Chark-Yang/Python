@@ -34,6 +34,7 @@ def jaka_get_tcp_position():
     
     robot.logout()
     
+    # print(ret[1])
     return ret[1]
 
 
@@ -49,7 +50,7 @@ robot = jkrc.RC("192.168.2.155")#返回机器人对象
 # 保存目录
 # =========================
 
-SAVE_DIR = "calib_data"
+SAVE_DIR = "260614_data2_reproj"
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 

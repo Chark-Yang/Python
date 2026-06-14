@@ -1,0 +1,28 @@
+R_cam2base:
+- - -0.9281388315623036
+  - -0.2609341745267898
+  - 0.26546499940704926
+- - -0.37173804261145493
+  - 0.6865632933191712
+  - -0.6248533203417728
+- - -0.0192129389101713
+  - -0.6786340699012663
+  - -0.7342252121438473
+t_cam2base:
+- 0.3881281968244763
+- 0.09289871513952852
+- 0.635858138018143
+
+# 之前第一次calib_data采集的24张照片用于求相机的外参，之后用采集的10张照片进行重投影验证,得到的结果RMSE是10.9553 pixels，太大了
+# 担心是相机位置发生改变，第一次的calib_data对应一个相机位置，第二次的reproj_data对应另一个相机位置
+# 260614又采集的数据，计算手眼标定矩阵，再使用reproj_data进行重投影验证，看一下RSME是多少
+(mujoco_real_deploy) chark@YY:~/Python/tutor_mujoco/manipulator_grasp_real_deploy/camera_calib$ python handeye_calibration.py 
+R_cam2base =
+[[-0.92813883 -0.26093417  0.265465  ]
+ [-0.37173804  0.68656329 -0.62485332]
+ [-0.01921294 -0.67863407 -0.73422521]]
+t_cam2base =
+[[0.3881282 ]
+ [0.09289872]
+ [0.63585814]]
+(mujoco_real_deploy) chark@YY:~/Python/tutor_mujoco/manipulator_grasp_real_deploy/camera_calib$ 

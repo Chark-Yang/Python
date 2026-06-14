@@ -91,10 +91,14 @@ class JakaRobot(Robot):
         """
         
         # T_wo: gg传过来的抓取位姿T_wo
-        # 得到T_wo_modi,计算出来T_flange_des，
+        # 得到T_wo_modi,计算出来T_flange_des
+
         """
         # ikpy求逆解需要的是机械臂末端相对于基座的位姿矩阵
-        # 传入的T_wo实际要沿自身T_wo 的x轴移动0.13m,再绕自身y轴旋转90度，才是机械臂末端正确的位姿
+        # T_wo是代表的夹爪末端中心点对应的位姿，我们实际需要末端法兰的位姿，求逆解，机械臂移动到对应位置，控制夹爪抓取（夹爪渲染的时候是一个显示）
+        # T_wo_modi是经过调整后的位姿，才是机械臂末端应该去的位姿；
+        # T_wo_modi如何得到：传入的T_wo实际要沿自身T_wo 的x轴移动0.13m,再绕自身y轴旋转90度，才是机械臂末端正确的位姿
+        # T_wo_modi世界坐标系下的机械臂末端位姿，需要转换的机械臂基坐标系下，这样才能求逆解
         
         # 定义沿自身 X 轴平移 0.13m 的变换矩阵
         T_trans_x = sm.SE3.Tx(-0.13)
@@ -107,6 +111,8 @@ class JakaRobot(Robot):
 
         t_base = self._base
 
+        # t_base.inv()是T_world_base的逆，即T_base_world，T_wo_modi是T_world_flange
+        # 2者相乘得到T_base_flange
         # 夹爪应该绕自身z轴旋转90度，这样夹取姿势比较合理
         T_flange_des = t_base.inv() * T_wo_modi * sm.SE3.Rz(np.pi / 2)
 
@@ -120,9 +126,11 @@ class JakaRobot(Robot):
     def ikine(self, Tep: SE3, q_guess: np.ndarray = None) -> np.ndarray:
         """
         
-        # Tep: 求逆解时期望的机械臂末端世界位姿
+        # Tep: 求逆解时期望的机械臂末端世界坐标系下的位姿
+        #返回机械臂求完逆解之后的关节角度
         """
-        # ikpy求逆解需要的是机械臂末端相对于基座的位姿矩阵--T_b_flange(b代表base,flange代表末端法兰) 
+        # ikpy求逆解需要的是机械臂末端相对于基座的位姿矩阵--T_b_flange(b代表base基座标系,flange代表末端法兰) 
+        # 传入的是世界坐标系下的机械系臂末端位姿，函数内部先转换成基座标系的末端位姿，再求逆解
         # Tep = T_wb * T_b_flange --->  t_base.inv() * Tep = T_b_flange 
         
         t_base = self._base

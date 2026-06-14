@@ -11,10 +11,12 @@ CHESSBOARD_SIZE = (8, 11)
 
 success_num = 0
 
-for i in range(30):
+PATH = "260614_data2_reproj"   # 你采集数据的文件夹
+
+for i in range(50):
 
     img = cv2.imread(
-        f"calib_data/{i:03d}.jpg"
+        f"{PATH}/{i:03d}.jpg"
     )
 
     gray = cv2.cvtColor(
@@ -33,5 +35,5 @@ for i in range(30):
         success_num += 1
 
 print(
-    f"{success_num}/30 success"
+    f"{success_num}/10 success"
 )

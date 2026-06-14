@@ -4,6 +4,10 @@
 
 jaka + graspnet + l20实现物体的抓取与搬运
 
+20260612
+只是复制之前的程序,jaka + graspnet + 二指夹爪 实现物体抓取与搬运
+
+
 Run command example:
 conda activate mujoco_graspnet
     cd 到当前目录下，   
