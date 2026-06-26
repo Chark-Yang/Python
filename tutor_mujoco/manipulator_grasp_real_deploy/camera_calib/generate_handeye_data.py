@@ -10,6 +10,7 @@
 R_target2cam 和 t_target2cam,标定板坐标系 → 相机坐标系 的旋转矩阵和平移向量
 R_gripper2base 和 t_gripper2base,机械臂末端(gripper)坐标系 → 机械臂基座(base)坐标系 的旋转矩阵和平移向量
 
+注意修改2个地方: 1. 数据集文件夹路径,2. 输出.npz文件名
 """
 
 import os
@@ -19,7 +20,8 @@ import numpy as np
 from scipy.spatial.transform import Rotation
 
 
-DATA_DIR = "260614_data2"   # 你采集数据的文件夹
+# DATA_DIR = "260614_data2"   # 你采集数据的文件夹
+DATA_DIR = "merged"   
 
 CHESSBOARD_SIZE = (8, 11)
 SQUARE_SIZE = 0.015
@@ -117,11 +119,6 @@ for idx in range(1000):
         'xyz',
         [rx, ry, rz]
     ).as_matrix()
-    # 第2次使用XYZ外旋，大写表示外旋，不行，重投影误差更大
-    # R_gripper2base = Rotation.from_euler(
-    #     'XYZ',
-    #     [rx, ry, rz]
-    # ).as_matrix()
 
     t_gripper2base = np.array(
         [x, y, z]
@@ -151,7 +148,7 @@ print(
 
 # 根据AX=XB的推导公式，保存相应的数据
 np.savez(
-    "calibrateHandEye_input_260614.npz",
+    "calibrateHandEye_input_merged.npz",
 
     R_board2cam=np.array(
         R_board2cam_list

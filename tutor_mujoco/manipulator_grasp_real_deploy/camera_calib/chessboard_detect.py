@@ -1,5 +1,7 @@
 """
 data检测成功率
+
+注意, 修改1个地方, PATH
 """
 
 import cv2
@@ -11,7 +13,7 @@ CHESSBOARD_SIZE = (8, 11)
 
 success_num = 0
 
-PATH = "260614_data2_reproj"   # 你采集数据的文件夹
+PATH = "260626_data_reproj"   # 你采集数据的文件夹
 
 for i in range(50):
 
@@ -35,5 +37,5 @@ for i in range(50):
         success_num += 1
 
 print(
-    f"{success_num}/10 success"
+    f"{success_num}/25 success"
 )

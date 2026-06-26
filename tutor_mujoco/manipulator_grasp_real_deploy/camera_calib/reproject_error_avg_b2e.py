@@ -1,4 +1,17 @@
-# 计算重投影误差，多帧均值得到T_board2end
+"""
+计算重投影误差,多帧均值得到T_board2end
+
+
+流程：定义重投影图片文件夹路径 -> 定义参考帧序号,计算T_board2end -> 对文件夹内所有图片计算重投影误差
+
+原理:用cv2图像检测一次,检测到棋盘格每个角点的位置,再通过标定的T_cam2base和T_board2end,计算出每个角点的理论位置；计算误差
+
+注意修改3个地方: 重投影棋盘格图片路径,参考帧序号,手眼标定得到的T_cam2base
+
+"""
+
+
+
 import cv2
 import numpy as np
 
@@ -26,7 +39,7 @@ def tcp_to_matrix(tcp):
 
 
 
-data_dir = "260614_data2_reproj"   # 你采集数据的文件夹
+data_dir = "merged_reproj"   # 你采集数据的文件夹
 image_paths = []
 T_end2base_list = []
 
@@ -47,22 +60,34 @@ print(f"Loaded {len(image_paths)} frames.")
 
 
 # 已知量，calib_data文件夹，xyz内旋计算得到手眼标定矩阵
-R_cam2base = np.array([[-0.93496679, -0.27835819,  0.21989502],
-                       [-0.35437203,  0.70486576, -0.61447923],
-                       [ 0.01604885, -0.65244231, -0.75766844]])
+# # 260614_data数据集的手眼标定结果
+# R_cam2base = np.array([[-0.93580742, -0.25455773, 0.24385412],
+#                        [-0.35227523,  0.70064919, -0.62047794],
+#                        [-0.01290873, -0.66655163, -0.7453471 ]])
 
-t_cam2base = np.array([[0.37511213],
-                       [0.08279032],
-                       [0.65419358]])
+# t_cam2base = np.array([[0.39877877],
+#                         [0.0994587 ],
+#                         [0.64403215]])
 
-# 260614_data2数据集的手眼标定结果
-# R_cam2base = np.array([[-0.92813883, -0.26093417,  0.265465  ],
-#                         [-0.37173804,  0.68656329, -0.62485332],
-#                         [-0.01921294, -0.67863407, -0.73422521]])
 
-# t_cam2base = np.array([[0.3881282 ],
-#  [0.09289872],
-#  [0.63585814]])
+# 260626_data数据集的手眼标定结果
+# R_cam2base = np.array([[-0.89300452, -0.27717414,  0.35456653],
+#                        [-0.44937812,  0.59212252, -0.6689172 ],
+#                        [-0.02454028, -0.75668053, -0.65332408]])
+
+# t_cam2base = np.array([[0.32463971],
+#                         [0.18871528],
+#                         [0.68643789]])
+
+# merged数据集的手眼标定结果，merged数据集内参标定
+R_cam2base = np.array([[-0.9377583,  -0.26024247,  0.22996355],
+                       [-0.34524681,  0.62688479, -0.6984412 ],
+                       [ 0.03760341, -0.73436321, -0.67771429]])
+
+t_cam2base = np.array([[0.33575064],
+                        [0.16561175],
+                        [0.6566156 ]])
+
 
 T_cam2base = np.eye(4)
 T_cam2base[:3, :3] = R_cam2base
@@ -82,33 +107,10 @@ square_size = 0.015           # 格子大小 (m)
 objp = np.zeros((pattern_size[0]*pattern_size[1], 3), np.float32)
 objp[:, :2] = np.mgrid[0:pattern_size[0], 0:pattern_size[1]].T.reshape(-1, 2) * square_size
 
-# # 1. 求 T_board_end（选用一帧参考帧）
-# ref_idx = 0 
 
-# T_end2base_ref = T_end2base_list[ref_idx]   # 参考帧的末端位姿
-# img_ref = cv2.imread(image_paths[ref_idx])
-# gray_ref = cv2.cvtColor(img_ref, cv2.COLOR_BGR2GRAY)
-# # ret：是否成功检测到
-# # corners_ref：检测到的角点图像坐标（精度为像素级）
-# ret, corners_ref = cv2.findChessboardCorners(gray_ref, pattern_size, None)
-# # 如果成功检测到
-# if ret:
-#     corners_ref = cv2.cornerSubPix(gray_ref, corners_ref, (11,11), (-1,-1), 
-#                                    (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001))
-#     retval, rvec, tvec = cv2.solvePnP(objp, corners_ref, K, dist)
-#     # T_board2cam_ref 即 从标定板坐标系到相机坐标系的 4×4 齐次变换矩阵，以cam为基准
-#     T_board2cam_ref = np.eye(4)
-#     T_board2cam_ref[:3,:3] = cv2.Rodrigues(rvec)[0]
-#     T_board2cam_ref[:3, 3] = tvec.ravel()
-    
-#     T_board2base = T_cam2base @ T_board2cam_ref
-#     T_board2end = np.linalg.inv(T_end2base_ref) @ T_board2base
-# # 否则检测失败
-# else:
-#     raise Exception("参考帧检测失败")
+# -------------------- 多帧联合估计 T_board2end --------------------
+# 使用前3帧计算T_board2end
 
-
-# -------------------- 多帧联合估计 T_board_end --------------------
 quats = []     # 存储四元数 (w, x, y, z)
 trans = []     # 存储平移向量 (3,)
 success_count = 0          # 新增计数器

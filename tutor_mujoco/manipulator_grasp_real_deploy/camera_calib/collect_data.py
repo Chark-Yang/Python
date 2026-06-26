@@ -9,6 +9,9 @@
         时间戳
     按 q 退出
         自动编号
+
+注意:cd 到camera_calib文件夹
+   修改1个地方,SAVE_DIR
 """
 
 import os
@@ -50,7 +53,7 @@ robot = jkrc.RC("192.168.2.155")#返回机器人对象
 # 保存目录
 # =========================
 
-SAVE_DIR = "260614_data2_reproj"
+SAVE_DIR = "merged_reproj_test"  
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 

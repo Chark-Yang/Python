@@ -1,0 +1,52 @@
+R_cam2base:
+- - -0.9377582981805164
+  - -0.2602424671865376
+  - 0.22996354595075616
+- - -0.3452468068820564
+  - 0.6268847885052671
+  - -0.6984411960061137
+- - 0.03760341116608604
+  - -0.7343632072846313
+  - -0.6777142932352127
+t_cam2base:
+- 0.3357506359175014
+- 0.1656117473090749
+- 0.6566155966837348
+
+(mujoco_real_deploy) chark@YY:~/Python/tutor_mujoco/manipulator_grasp_real_deploy/camera_calib$ python handeye_calibration.py 
+R_cam2base =
+[[-0.9377583  -0.26024247  0.22996355]
+ [-0.34524681  0.62688479 -0.6984412 ]
+ [ 0.03760341 -0.73436321 -0.67771429]]
+t_cam2base =
+[[0.33575064]
+ [0.16561175]
+ [0.6566156 ]]
+(mujoco_real_deploy) chark@YY:~/Python/tutor_mujoco/manipulator_grasp_real_deploy/camera_calib$ 
+#重新选择了高质量的19张图片merged进行内参标定，并得到的手眼标定结果
+# (mujoco_real_deploy) chark@YY:~/Python/tutor_mujoco/manipulator_grasp_real_deploy/camera_calib$ python check_direct_reproj.py 
+# 共找到 19 张图片
+
+# Frame 0: RMSE = 0.0891 pixels
+# Frame 1: RMSE = 0.0796 pixels
+# Frame 2: RMSE = 0.1168 pixels
+# Frame 3: RMSE = 0.0684 pixels
+# Frame 4: RMSE = 0.1664 pixels
+# Frame 5: RMSE = 0.0798 pixels
+# Frame 6: RMSE = 0.0848 pixels
+# Frame 7: RMSE = 0.0782 pixels
+# Frame 8: RMSE = 0.0813 pixels
+# Frame 9: RMSE = 0.1028 pixels
+# Frame 10: RMSE = 0.0776 pixels
+# Frame 11: RMSE = 0.1045 pixels
+# Frame 12: RMSE = 0.0723 pixels
+# Frame 13: RMSE = 0.3770 pixels
+# Frame 14: RMSE = 0.1296 pixels
+# Frame 15: RMSE = 0.0885 pixels
+# Frame 16: RMSE = 0.0950 pixels
+# Frame 17: RMSE = 0.1254 pixels
+# Frame 18: RMSE = 0.0689 pixels
+
+# 平均 RMSE: 0.1098 pixels
+# 最大 RMSE: 0.3770 pixels
+# 最小 RMSE: 0.0684 pixels

@@ -11,6 +11,10 @@ AX=XB公式中使用的也是T_gripper2base”,
 最后函数返回的时候
 cv2.calibrateHandEye 返回的 R_cam2gripper 和 t_cam2gripper,
 实际上就是相机坐标系相对于机械臂基座坐标系的变换矩阵 T_cam2base
+
+
+注意：每次手眼标定结束之后复制终端输出到.yaml文件,因为终端输出更直观
+修改2个地方: 1. 数据集文件夹路径,2. 输出.npz文件名
 """
 
 import cv2
@@ -18,7 +22,7 @@ import yaml
 import numpy as np
 
 data = np.load(
-    "calibrateHandEye_input_260614.npz"
+    "calibrateHandEye_input_merged.npz"
 )
 
 R_board2cam = data[
@@ -76,5 +80,5 @@ result = {
     "t_cam2base": t_cam2base.reshape(3).tolist()
 }
 
-with open("handeye_260614.yaml", "w") as f:
+with open("handeye_merged.yaml", "w") as f:
     yaml.dump(result, f, default_flow_style=False) # 加上 default_flow_style=False 让 yaml 更易读
