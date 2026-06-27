@@ -196,6 +196,7 @@ if __name__ == '__main__':
     # 抓取位置， T_wc是cam在world中的位姿，T_co是gg在cam中的位姿，T_wo是gg在world中的位姿
     robot = env.robot
     T_wb = robot.base
+    print(f"T_wb:\n{T_wb}")
     n_wc = np.array([0.0, -1.0, 0.0])
     o_wc = np.array([-1.0, 0.0, -0.5])
     t_wc = np.array([1.0, 0.6, 2.0])
@@ -214,6 +215,7 @@ if __name__ == '__main__':
     
 
     T_flange_des = env.robot.get_T_flange_des(T_wo)
+    print(f"env.robot.get_T_flange_des(T_wo):\n{T_flange_des}")
     T_flange_world = T_wb * sm.SE3(T_flange_des)
     print(f"T_flange_world:\n{T_flange_world}")
     

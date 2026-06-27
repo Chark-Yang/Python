@@ -47,7 +47,7 @@
 			<geom name="mocap" type="sphere" size="0.000001"/>
 		</body>
 
-		<body name="Cylinder" pos="1.4 0.6 0.9" quat="1 0 0 0">
+		<!-- <body name="Cylinder" pos="1.4 0.6 0.9" quat="1 0 0 0">
 				<joint name="Cylinder" type="free" />
 				<geom name="Cylinder" type="cylinder" size="0.025 0.1" rgba="1 1 0 1" condim="6" solref="0.0000000001 1"/>
 			</body>
@@ -55,7 +55,7 @@
 		<body name="Box" pos="1.4 0.2 0.9" quat="1 0 0 0">
 			<joint name="Box" type="free" />
 			<geom name="Box" type="box" size="0.025 0.025 0.025" rgba="1 0 1 1" condim="3"/>
-		</body>
+		</body> -->
 
 		<body name="T_block" pos="1.4 1 0.9" quat="1 0 0 0">
 			<joint name="T_block" type="free" />

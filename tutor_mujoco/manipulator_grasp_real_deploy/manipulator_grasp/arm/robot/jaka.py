@@ -97,24 +97,30 @@ class JakaRobot(Robot):
         # ikpy求逆解需要的是机械臂末端相对于基座的位姿矩阵
         # T_wo是代表的夹爪末端中心点对应的位姿，我们实际需要末端法兰的位姿，求逆解，机械臂移动到对应位置，控制夹爪抓取（夹爪渲染的时候是一个显示）
         # T_wo_modi是经过调整后的位姿，才是机械臂末端应该去的位姿；
-        # T_wo_modi如何得到：传入的T_wo实际要沿自身T_wo 的x轴移动0.13m,再绕自身y轴旋转90度，才是机械臂末端正确的位姿
+        # T_wo_modi如何得到：传入的T_wo实际要沿自身T_wo 的x轴移动0.13m,再绕自身y轴旋转90度，再绕自身z轴旋转90度，才是机械臂末端正确的位姿
         # T_wo_modi世界坐标系下的机械臂末端位姿，需要转换的机械臂基坐标系下，这样才能求逆解
-        
+
+        # 经过实际观察，夹爪在绕再绕自身y轴旋转90度之后，应该再绕自身z轴旋转90度，这样夹取姿势比较合理
+
+
         # 定义沿自身 X 轴平移 0.13m 的变换矩阵
         T_trans_x = sm.SE3.Tx(-0.13)
 
         #  定义绕自身 Y 轴旋转 90 度 (π/2) 的变换矩阵
         T_rot_y = sm.SE3.Ry(np.pi / 2)
 
+        # 定义绕自身 Z 轴旋转 90 度 (π/2) 的变换矩阵
+        T_rot_z = sm.SE3.Rz(np.pi / 2)
+
         # 组合变换：严格按照发生的顺序【右乘】;
-        T_wo_modi = T_wo * T_trans_x * T_rot_y 
+        T_wo_modi = T_wo * T_trans_x * T_rot_y * T_rot_z
 
         t_base = self._base
 
         # t_base.inv()是T_world_base的逆，即T_base_world，T_wo_modi是T_world_flange
         # 2者相乘得到T_base_flange
-        # 夹爪应该绕自身z轴旋转90度，这样夹取姿势比较合理
-        T_flange_des = t_base.inv() * T_wo_modi * sm.SE3.Rz(np.pi / 2)
+        
+        T_flange_des = t_base.inv() * T_wo_modi 
 
         self._T_wo_modi = T_wo_modi
         self._T_flange_des = T_flange_des
