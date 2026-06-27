@@ -15,6 +15,9 @@ jaka机械臂内置函数逆运动学,计算末端位姿
 260627
 手眼标定得到相机外参, gg抓取位姿转换到基座标系下, 变换gg得到末端位姿,求机械臂逆解,让机械臂臂末端移动到对应位置
 
+点云可视化抓取位姿和坐标系，方便进行判断
+
+
 注意：核对并修改相机外参,和内参(搜索intrinsics)
 
 Run command example:
@@ -475,20 +478,50 @@ def collision_detection(gg, cloud):
 
     return gg
 
-def vis_grasps(gg, object_cloud, scene_cloud=None):
+def vis_grasps(gg, T_base_cam, T_base_flange, object_cloud, scene_cloud=None):
+    
+    # -------- 可视化准备 --------
+    # 获取物体点云和场景点云（generate_grasps 内部已生成，generate_grasps 返回点云)
+    
+    # 创建可视化几何体列表
+    vis_geoms = []
+    # 获取物体点云和场景点云（generate_grasps 已经返回）
+    # 注意：object_cloud 和 scene_cloud 当前都在相机坐标系下
+    # 1. 物体点云：变换到基座系，并降采样
+    object_cloud_base = object_cloud.voxel_down_sample(voxel_size=0.005)
+    object_cloud_base.transform(T_base_cam)      
+    vis_geoms.append(object_cloud_base)
+
+    # 2. GraspNet 夹爪模型：同样变换到基座系
     grippers = gg.to_open3d_geometry_list()
+    for g in grippers:
+        g.transform(T_base_cam)                     # 变换到基座系
+        g.paint_uniform_color([0.5, 0.5, 0.5])      # 灰色
+    vis_geoms += grippers
 
-    if scene_cloud is not None:
-        # 场景点云显示得浅一点，方便看目标物体和抓取姿态
-        scene_cloud_vis = scene_cloud.voxel_down_sample(voxel_size=0.005)
-        geometries = [scene_cloud_vis, object_cloud, *grippers]
-    else:
-        geometries = [object_cloud, *grippers]
+    # 3. 抓取坐标系（相机系下构建，然后变换到基座系）
+    T_gg_cam = np.eye(4)
+    T_gg_cam[:3, :3] = gg.rotation_matrices[0]
+    T_gg_cam[:3, 3]  = gg.translations[0]
+    T_gg_base = T_base_cam @ T_gg_cam               # 变换到基座系
+    vis_geoms.append(create_coordinate_frame(T_gg_base, size=0.06))
+    
+    # 5. 法兰目标坐标系（已经在基座系下，直接使用）
+    frame_flange = create_coordinate_frame(T_base_flange.A, size=0.06)
+    vis_geoms.append(frame_flange)
+    
+    # 6. 添加基座系原点，用于参考,非常有必要
+    frame_base = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.1)
+    vis_geoms.append(frame_base)
 
-    o3d.visualization.draw_geometries(geometries)
+    # 启动可视化
+    print("\n显示可视化窗口，请检查抓取姿态（灰色）与目标法兰（彩色轴）。关闭open3d窗口后继续执行程序。\n")
+    o3d.visualization.draw_geometries(vis_geoms)
+    
 
 
-def generate_grasps(net, imgs, visual=False):
+
+def generate_grasps(net, imgs):
     end_points, object_cloud, scene_cloud = get_and_process_data(imgs)
     # graspnet 只看目标物体点云，碰撞检测需要看完整场景点云
     gg = get_grasps(net, end_points)
@@ -496,9 +529,7 @@ def generate_grasps(net, imgs, visual=False):
     gg.nms()
     gg.sort_by_score()
     gg = gg[:1]
-    if visual:
-        vis_grasps(gg, object_cloud)
-    return gg
+    return gg , object_cloud, scene_cloud
 
 
 class JointSpaceTrajectory:
@@ -583,15 +614,19 @@ def get_T_base_flange(T_gg2base:SE3)-> SE3:
     # 经过实际观察，夹爪在绕再绕自身y轴旋转90度之后，应该再绕自身z轴旋转90度，这样夹取姿势比较合理
 
     # # 定义沿自身 X 轴平移 0.13m 的变换矩阵
-    # T_trans_x = sm.SE3.Tx(-0.13)
+    T_trans_x = sm.SE3.Tx(-0.13)
+
+    # # 定义沿自身 z 轴平移 0.2m 的变换矩阵
+    T_trans_z = sm.SE3.Tz(-0.3)
 
     #  定义绕自身 Y 轴旋转 90 度 (π/2) 的变换矩阵
     T_rot_y = sm.SE3.Ry(np.pi / 2)
     # 定义绕自身 Z 轴旋转 90 度 (π/2) 的变换矩阵
     T_rot_z = sm.SE3.Rz(np.pi / 2)
     # 组合变换：严格按照发生的顺序【右乘】;
-    # T_wo_modi = T_gg2base * T_trans_x * T_rot_y * T_rot_z
-    T_base_flange = T_gg2base * T_rot_y * T_rot_z
+    # T_base_flange = T_gg2base * T_rot_y * T_rot_z
+    T_base_flange = T_gg2base * T_trans_x * T_trans_z * T_rot_y * T_rot_z
+    
 
     print(f"机械臂末端位姿 T_base_flange:\n{T_base_flange}")
     
@@ -659,6 +694,17 @@ def jaka_joint_move(joint_pose):
     time.sleep(3)
     # robot.logout()
 
+def create_coordinate_frame(T: np.ndarray, size=0.05):
+    """
+    用 Open3D 创建一个坐标轴（红-X，绿-Y，蓝-Z）
+    T : 4x4 齐次变换矩阵
+    size : 轴长度
+    """
+    frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=size)
+    frame.transform(T)
+    return frame
+
+
 if __name__ == '__main__':
 
     R_cam2base = np.array([[-0.9377583,  -0.26024247,  0.22996355],
@@ -710,14 +756,27 @@ if __name__ == '__main__':
 
             print("[GraspNet] 正在基于 YOLO mask 后的目标点云生成抓取位姿...")
 
-            gg = generate_grasps(net, imgs, visual=True)
+            gg, object_cloud, scene_cloud  = generate_grasps(net, imgs)
 
-            print("========== GraspNet 输出 ==========")
-            print("抓取位置 translation，单位 m，相机坐标系下:")
-            print(gg.translations[0])
+            # print("========== GraspNet 输出 ==========")
+            # print("抓取位置 translation，单位 m，相机坐标系下:")
+            # print(gg.translations[0])
 
-            print("抓取姿态 rotation matrix，相机坐标系下:")
-            print(gg.rotation_matrices[0])
+            # print("抓取姿态 rotation matrix，相机坐标系下:")
+            # print(gg.rotation_matrices[0])
+
+            # 转换到基座系
+            T_base_gg = grasp_in_base_frame(gg, T_base_cam, 0)
+            print("\n基座系下抓取位姿:")
+            print(T_base_gg)
+
+            T_base_flange = get_T_base_flange(T_base_gg)
+            target_tcp_pose = se3_to_jaka_pose(T_base_flange)
+            print("目标 TCP 位姿 (JAKA 格式):", target_tcp_pose)
+
+            vis_grasps(gg, T_base_cam, T_base_flange, object_cloud, scene_cloud=None)
+
+        
 
             # 等待用户按键确认
             print("\n确认此抓取？在终端输入 c 继续，其他键放弃，q 退出程序。")
@@ -728,17 +787,9 @@ if __name__ == '__main__':
                 print("放弃该抓取，重新采集。")
                 continue
 
-            # 转换到基座系
-            T_base_gg = grasp_in_base_frame(gg, T_base_cam, 0)
-            print("\n基座系下抓取位姿:")
-            print(T_base_gg)
+            
 
-            T_base_flange = get_T_base_flange(T_base_gg)
-            target_tcp_pose = se3_to_jaka_pose(T_base_flange)
-
-            # target_tcp_pose[2] += 200
-            print("目标 TCP 位姿 (JAKA 格式):", target_tcp_pose)
-
+            
             # 获取当前关节角度
             current_joint_pos = jaka_get_joint_position()  
 
