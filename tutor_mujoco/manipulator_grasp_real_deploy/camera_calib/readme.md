@@ -1,0 +1,7 @@
+手眼标定的流程
+
+
+collect_data.py采集图像和对应的机械臂末端法兰位姿
+generate_handeye_data.py生成用于手眼标定的数据
+handeye_calibration.py用于计算相机相对于机械臂基座的位姿
+reproject_error_avg_b2e.py 是多帧平均计算T_board2end，重投影误差更加准确
